@@ -40,7 +40,8 @@
       <input id="varietyName" type="text" placeholder="z. B. Boskoop" autocomplete="off" />
 
       <label for="trainImage">Apfelfoto</label>
-      <input id="trainImage" type="file" accept="image/*" capture="environment" />
+      <input id="trainImage" type="file" accept="image/*" />
+      <p class="hint">Auf Android kannst du jetzt Fotos aus der Galerie auswählen. Je nach Gerät wird zusätzlich die Kamera angeboten.</p>
       <img id="trainPreview" class="preview hidden" alt="Vorschau Trainingsbild" />
 
       <button id="addTrainingBtn" class="primary" disabled>Foto als Beispiel speichern</button>
@@ -52,7 +53,8 @@
       <p>Fotografiere einen unbekannten Apfel. Die App vergleicht ihn mit deinen angelernten Sorten.</p>
 
       <label for="recognizeImage">Apfelfoto</label>
-      <input id="recognizeImage" type="file" accept="image/*" capture="environment" />
+      <input id="recognizeImage" type="file" accept="image/*" />
+      <p class="hint">Wähle ein vorhandenes Foto aus der Galerie oder nutze eine angebotene Kamera-Option.</p>
       <img id="recognizePreview" class="preview hidden" alt="Vorschau unbekannter Apfel" />
 
       <button id="recognizeBtn" class="primary" disabled>Erkennen</button>
