@@ -34,6 +34,78 @@ const MONTHS = [
   [7,'Juli'], [8,'August'], [9,'September'], [10,'Oktober'], [11,'November'], [12,'Dezember']
 ];
 
+const REFERENCE_VARIETIES = Array.isArray(window.SORTENWISSEN) ? window.SORTENWISSEN : [];
+
+function normalizeLookup(value) {
+  return String(value || '')
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .toLocaleLowerCase('de')
+    .replace(/[’`´]/g, "'")
+    .replace(/[^a-z0-9äöüß' -]+/gi, ' ')
+    .replace(/\s+/g, ' ').trim();
+}
+
+function referenceNames(ref) {
+  const fromSynonyms = String(ref?.synonyms || '').split(';').map(x => x.trim()).filter(Boolean);
+  return [ref?.name, ...(ref?.aliases || []), ...fromSynonyms].filter(Boolean);
+}
+
+function findReference(fruitType, name) {
+  const needle = normalizeLookup(name);
+  if (!needle) return null;
+  return REFERENCE_VARIETIES.find(ref => (!fruitType || ref.fruitType === fruitType) && referenceNames(ref).some(n => normalizeLookup(n) === needle)) || null;
+}
+
+function findReferenceById(id) {
+  return REFERENCE_VARIETIES.find(ref => ref.id === id) || null;
+}
+
+function combineSources(...lists) {
+  const out = []; const seen = new Set();
+  for (const list of lists) for (const src of (Array.isArray(list) ? list : [])) {
+    if (!src?.url) continue;
+    const key = String(src.url);
+    if (seen.has(key)) continue;
+    seen.add(key); out.push({ label: src.label || 'Quelle', url: key });
+  }
+  return out;
+}
+
+function referenceToMeta(ref) {
+  return {
+    key: makeVarietyKey(ref.fruitType, ref.name), fruitType: ref.fruitType, name: ref.name,
+    synonyms: ref.synonyms || (ref.aliases || []).join('; '), origin: ref.origin || '',
+    tastes: Array.isArray(ref.tastes) ? [...ref.tastes] : [],
+    ripenessStart: ref.ripenessStart || null, ripenessEnd: ref.ripenessEnd || null,
+    ripenessNote: ref.ripenessNote || '', usage: ref.usage || '', storage: ref.storage || '',
+    description: ref.description || '', sources: combineSources(ref.sources),
+    referenceId: ref.id, builtInKnowledge: true
+  };
+}
+
+function enrichMeta(meta) {
+  if (!meta) return meta;
+  const ref = findReferenceById(meta.referenceId) || findReference(meta.fruitType, meta.name);
+  if (!ref) return { ...meta, sources: combineSources(meta.sources) };
+  const base = referenceToMeta(ref);
+  return {
+    ...base, ...meta,
+    synonyms: meta.synonyms || base.synonyms,
+    origin: meta.origin || base.origin,
+    tastes: Array.isArray(meta.tastes) && meta.tastes.length ? meta.tastes : base.tastes,
+    ripenessStart: meta.ripenessStart || base.ripenessStart,
+    ripenessEnd: meta.ripenessEnd || base.ripenessEnd,
+    ripenessNote: meta.ripenessNote || base.ripenessNote,
+    usage: meta.usage || base.usage, storage: meta.storage || base.storage,
+    description: meta.description || base.description,
+    sources: combineSources(meta.sources, base.sources), referenceId: ref.id, builtInKnowledge: true
+  };
+}
+
+function safeExternalUrl(url) {
+  try { const u = new URL(url); return ['https:', 'http:'].includes(u.protocol) ? u.href : ''; } catch { return ''; }
+}
+
 function normalizeName(name) { return name.trim().replace(/\s+/g, ' '); }
 function fruitLabel(type) { return type === 'pear' ? 'Birne' : 'Apfel'; }
 function makeVarietyKey(fruitType, name) { return `${fruitType || 'apple'}::${normalizeName(name).toLocaleLowerCase('de')}`; }
@@ -213,6 +285,72 @@ function setSelectedTastes(containerId, values=[]) {
   $(containerId).querySelectorAll('input[type="checkbox"]').forEach(x => { x.checked = set.has(x.value); });
 }
 
+function setupKnownVarietiesDatalist() {
+  const list = $('knownVarieties');
+  if (!list) return;
+  list.innerHTML = '';
+  const values = [];
+  for (const ref of REFERENCE_VARIETIES) {
+    values.push([ref.name, fruitLabel(ref.fruitType)]);
+    for (const alias of (ref.aliases || []).slice(0, 2)) values.push([alias, `${fruitLabel(ref.fruitType)} · Synonym`]);
+  }
+  const seen = new Set();
+  for (const [value, label] of values.sort((a,b) => a[0].localeCompare(b[0], 'de'))) {
+    const key = normalizeLookup(value); if (seen.has(key)) continue; seen.add(key);
+    const opt = document.createElement('option'); opt.value = value; opt.label = label; list.appendChild(opt);
+  }
+}
+
+function currentReference() {
+  const name = $('varietyName')?.value || '';
+  const type = $('trainFruitType')?.value || null;
+  return findReference(type, name) || findReference(null, name);
+}
+
+function renderKnowledgeSources(sources=[]) {
+  const box = $('knowledgeSources');
+  if (!box) return;
+  const safe = combineSources(sources).map(src => ({...src, safeUrl: safeExternalUrl(src.url)})).filter(src => src.safeUrl);
+  if (!safe.length) { box.classList.add('hidden'); box.innerHTML = ''; return; }
+  box.classList.remove('hidden');
+  box.innerHTML = `<strong>Fachquellen:</strong> ${safe.map(src => `<a href="${escapeHtml(src.safeUrl)}" target="_blank" rel="noopener noreferrer">${escapeHtml(src.label)}</a>`).join(' · ')}`;
+}
+
+function updateKnowledgeMatch(message='') {
+  const box = $('knowledgeMatch'); const btn = $('applyKnowledgeBtn');
+  const ref = currentReference();
+  if (!box || !btn) return ref;
+  if (!normalizeName($('varietyName').value)) {
+    box.textContent = 'Tippe einen bekannten Sortennamen ein. Das eingebaute Fachwissen kann passende Angaben automatisch ergänzen.';
+    btn.disabled = true; renderKnowledgeSources([]); return null;
+  }
+  if (!ref) {
+    box.textContent = 'Für diesen Namen ist im eingebauten Grundbestand noch kein Fachwissen hinterlegt. Du kannst die Angaben trotzdem selbst speichern.';
+    btn.disabled = true; renderKnowledgeSources([]); return null;
+  }
+  box.innerHTML = `<strong>Fachwissen gefunden:</strong> ${escapeHtml(ref.name)} (${escapeHtml(fruitLabel(ref.fruitType))})${message ? ` · ${escapeHtml(message)}` : ''}`;
+  btn.disabled = false; renderKnowledgeSources(ref.sources || []); return ref;
+}
+
+function applyReferenceToForm(ref=currentReference(), force=false, quiet=false) {
+  if (!ref) { updateKnowledgeMatch(); return false; }
+  $('trainFruitType').value = ref.fruitType;
+  $('varietyName').value = ref.name;
+  const setText = (id, value) => { if (force || !$(id).value.trim()) $(id).value = value || ''; };
+  setText('synonyms', ref.synonyms || (ref.aliases || []).join('; '));
+  setText('origin', ref.origin || '');
+  setText('usage', ref.usage || '');
+  setText('storage', ref.storage || '');
+  setText('ripenessNote', ref.ripenessNote || '');
+  setText('description', ref.description || '');
+  if (force || !selectedTastes('trainTasteOptions').length) setSelectedTastes('trainTasteOptions', ref.tastes || []);
+  if (force || !$('ripenessStart').value) $('ripenessStart').value = ref.ripenessStart ? String(ref.ripenessStart) : '';
+  if (force || !$('ripenessEnd').value) $('ripenessEnd').value = ref.ripenessEnd ? String(ref.ripenessEnd) : '';
+  updateKnowledgeMatch(quiet ? 'Angaben ergänzt' : 'Fachwissen übernommen');
+  renderKnowledgeSources(ref.sources || []);
+  return true;
+}
+
 function makeTypeSelect(selected, index) {
   const select = document.createElement('select'); select.className = 'view-type-select'; select.dataset.index = index;
   for (const [value, label] of VIEW_TYPES) {
@@ -265,17 +403,24 @@ function renderRecognizeGrid() {
 function readTrainMetadata() {
   const fruitType = $('trainFruitType').value;
   const name = normalizeName($('varietyName').value);
+  const ref = findReference(fruitType, name) || findReference(null, name);
   return {
     key: name ? makeVarietyKey(fruitType, name) : '', fruitType, name,
     synonyms: $('synonyms').value.trim(), origin: $('origin').value.trim(),
     tastes: selectedTastes('trainTasteOptions'),
     ripenessStart: Number($('ripenessStart').value) || null,
     ripenessEnd: Number($('ripenessEnd').value) || null,
-    description: $('description').value.trim()
+    ripenessNote: $('ripenessNote').value.trim(),
+    usage: $('usage').value.trim(), storage: $('storage').value.trim(),
+    description: $('description').value.trim(),
+    referenceId: ref?.id || null,
+    sources: combineSources(ref?.sources)
   };
 }
 
 async function saveVarietyMetadata(showMessage=true, preserveBlank=false) {
+  const ref = currentReference();
+  if (ref) applyReferenceToForm(ref, false, true);
   const input = readTrainMetadata();
   if (!input.name) { alert('Bitte zuerst einen Sortennamen eingeben.'); return null; }
   const existing = await getVariety(input.key);
@@ -290,9 +435,16 @@ async function saveVarietyMetadata(showMessage=true, preserveBlank=false) {
       tastes: input.tastes.length ? input.tastes : (existing.tastes || []),
       ripenessStart: input.ripenessStart || existing.ripenessStart || null,
       ripenessEnd: input.ripenessEnd || existing.ripenessEnd || null,
+      ripenessNote: input.ripenessNote || existing.ripenessNote || '',
+      usage: input.usage || existing.usage || '', storage: input.storage || existing.storage || '',
       description: input.description || existing.description || '',
+      referenceId: input.referenceId || existing.referenceId || null,
+      sources: combineSources(input.sources, existing.sources),
       updatedAt: now
     };
+  } else if (existing) {
+    record.sources = combineSources(input.sources, existing.sources);
+    record.referenceId = input.referenceId || existing.referenceId || null;
   }
   await putVariety(record);
   if (showMessage) alert(`${fruitLabel(record.fruitType)} „${record.name}“: Sortendaten gespeichert.`);
@@ -371,16 +523,21 @@ function ripenessMatch(month, meta) {
 
 function renderMetaHtml(meta) {
   if (!meta) return '<p class="empty">Noch keine Sortenbeschreibung hinterlegt.</p>';
+  meta = enrichMeta(meta);
   const tastes = (meta.tastes || []).map(tasteLabel);
   const ripeness = meta.ripenessStart && meta.ripenessEnd ? `${monthLabel(meta.ripenessStart)} bis ${monthLabel(meta.ripenessEnd)}` : 'nicht angegeben';
+  const sourceLinks = combineSources(meta.sources).map(src => ({...src, safeUrl: safeExternalUrl(src.url)})).filter(src => src.safeUrl);
   return `
     <div class="description-box">
       <p><strong>Fruchtart:</strong> ${escapeHtml(fruitLabel(meta.fruitType))}</p>
       ${meta.synonyms ? `<p><strong>Synonyme:</strong> ${escapeHtml(meta.synonyms)}</p>` : ''}
       ${meta.origin ? `<p><strong>Herkunft:</strong> ${escapeHtml(meta.origin)}</p>` : ''}
       <p><strong>Geschmack:</strong> ${tastes.length ? tastes.map(x => `<span class="badge">${escapeHtml(x)}</span>`).join('') : 'nicht angegeben'}</p>
-      <p><strong>Reifezeit:</strong> ${escapeHtml(ripeness)}</p>
+      <p><strong>Reifezeit:</strong> ${escapeHtml(ripeness)}${meta.ripenessNote ? `<br><span class="meta-note">${escapeHtml(meta.ripenessNote)}</span>` : ''}</p>
+      ${meta.usage ? `<p><strong>Verwendung:</strong> ${escapeHtml(meta.usage)}</p>` : ''}
+      ${meta.storage ? `<p><strong>Lagerfähigkeit:</strong> ${escapeHtml(meta.storage)}</p>` : ''}
       ${meta.description ? `<p><strong>Beschreibung:</strong> ${escapeHtml(meta.description)}</p>` : '<p class="empty">Noch keine ausführliche Beschreibung hinterlegt.</p>'}
+      ${sourceLinks.length ? `<p class="source-line"><strong>Quellen:</strong> ${sourceLinks.map(src => `<a href="${escapeHtml(src.safeUrl)}" target="_blank" rel="noopener noreferrer">${escapeHtml(src.label)}</a>`).join(' · ')}</p>` : ''}
     </div>`;
 }
 
@@ -389,7 +546,7 @@ async function recognize() {
   const examples = await getAllExamples();
   if (!examples.length) return alert('Bitte zuerst mindestens eine Sorte anlernen.');
   const varieties = await getAllVarieties();
-  const metaMap = new Map(varieties.map(v => [v.key, v]));
+  const metaMap = new Map(varieties.map(v => [v.key, enrichMeta(v)]));
   const fruitFilter = $('recognizeFruitType').value;
   const selectedTaste = selectedTastes('recognizeTasteOptions');
   const selectedMonth = Number($('recognizeMonth').value) || null;
@@ -416,7 +573,7 @@ async function recognize() {
     const scored = groupList.map(group => {
       const rawImage = Math.max(0, cosineSimilarity(query, averageEmbedding(group.vectors)));
       const imageScore = clamp((rawImage - 0.45) / 0.55);
-      const meta = metaMap.get(group.key) || { key: group.key, name: group.name, fruitType: group.fruitType, tastes: [] };
+      const meta = metaMap.get(group.key) || enrichMeta({ key: group.key, name: group.name, fruitType: group.fruitType, tastes: [] });
       const tScore = tasteMatch(selectedTaste, meta.tastes || []);
       const rScore = ripenessMatch(selectedMonth, meta);
       let weighted = imageScore * 0.72; let weight = 0.72;
@@ -452,10 +609,23 @@ async function recognize() {
   } finally { btn.textContent = 'Mit Fotos + Merkmalen bestimmen'; refreshActionButtons(); }
 }
 
+async function getSearchableVarieties() {
+  const local = await getAllVarieties();
+  const merged = new Map();
+  for (const ref of REFERENCE_VARIETIES) merged.set(`ref:${ref.id}`, referenceToMeta(ref));
+  for (const item of local) {
+    const ref = findReferenceById(item.referenceId) || findReference(item.fruitType, item.name);
+    const meta = enrichMeta(item);
+    if (ref) merged.set(`ref:${ref.id}`, meta);
+    else merged.set(`local:${item.key}`, meta);
+  }
+  return Array.from(merged.values());
+}
+
 async function searchVarieties() {
-  const varieties = await getAllVarieties();
-  if (!varieties.length) { $('searchResults').innerHTML = '<p class="hint">Noch keine Sortenbeschreibungen gespeichert.</p>'; return; }
-  const text = $('searchText').value.trim().toLocaleLowerCase('de');
+  const varieties = await getSearchableVarieties();
+  if (!varieties.length) { $('searchResults').innerHTML = '<p class="hint">Noch keine Sorteninformationen vorhanden.</p>'; return; }
+  const text = normalizeLookup($('searchText').value);
   const fruit = $('searchFruitType').value;
   const month = Number($('searchMonth').value) || null;
   const tastes = selectedTastes('searchTasteOptions');
@@ -467,9 +637,9 @@ async function searchVarieties() {
   }
 
   let rows = varieties.filter(v => fruit === 'all' || v.fruitType === fruit).map(v => {
-    const hay = `${v.name || ''} ${v.synonyms || ''} ${v.origin || ''} ${v.description || ''}`.toLocaleLowerCase('de');
+    const hay = normalizeLookup(`${v.name || ''} ${v.synonyms || ''} ${v.origin || ''} ${v.description || ''} ${v.usage || ''} ${v.storage || ''} ${v.ripenessNote || ''}`);
     const textMatches = !text || hay.includes(text);
-    const textScore = text ? (textMatches ? (String(v.name).toLocaleLowerCase('de').includes(text) ? 1 : 0.75) : 0) : null;
+    const textScore = text ? (textMatches ? (normalizeLookup(v.name).includes(text) ? 1 : 0.75) : 0) : null;
     const tScore = tasteMatch(tastes, v.tastes || []);
     const rScore = ripenessMatch(month, v);
     let total = 0, weight = 0;
@@ -480,20 +650,21 @@ async function searchVarieties() {
     return { v, score: total / weight, photo: photoByKey.get(v.key) || null };
   }).filter(x => {
     if (!text) return true;
-    const hay = `${x.v.name || ''} ${x.v.synonyms || ''} ${x.v.origin || ''} ${x.v.description || ''}`.toLocaleLowerCase('de');
+    const hay = normalizeLookup(`${x.v.name || ''} ${x.v.synonyms || ''} ${x.v.origin || ''} ${x.v.description || ''} ${x.v.usage || ''} ${x.v.storage || ''} ${x.v.ripenessNote || ''}`);
     return hay.includes(text);
-  }).sort((a,b) => b.score - a.score).slice(0, 20);
+  }).sort((a,b) => b.score - a.score || String(a.v.name).localeCompare(String(b.v.name), 'de')).slice(0, 30);
 
   if (!rows.length) { $('searchResults').innerHTML = '<p class="hint">Keine passende Sorte gefunden.</p>'; return; }
-  $('searchResults').innerHTML = '<h3>Passende Sorten</h3>' + rows.map(x => {
+  $('searchResults').innerHTML = `<h3>Passende Sorten</h3><p class="hint">Enthält deine eigenen Sortendaten und ${REFERENCE_VARIETIES.length} eingebaute Fachdatensätze.</p>` + rows.map(x => {
     const pct = Math.round(x.score * 100);
-    return `<div class="result-card"><div class="result-head"><h3>${escapeHtml(x.v.name)} <small>(${escapeHtml(fruitLabel(x.v.fruitType))})</small></h3>${(text || tastes.length || month) ? `<span class="probability">${pct} % passend</span>` : ''}</div>${renderMetaHtml(x.v)}</div>`;
+    const knowledgeBadge = x.v.builtInKnowledge ? '<span class="badge knowledge-badge">Fachwissen</span>' : '';
+    return `<div class="result-card"><div class="result-head"><h3>${escapeHtml(x.v.name)} <small>(${escapeHtml(fruitLabel(x.v.fruitType))})</small> ${knowledgeBadge}</h3>${(text || tastes.length || month) ? `<span class="probability">${pct} % passend</span>` : ''}</div>${renderMetaHtml(x.v)}</div>`;
   }).join('');
 }
 
 async function updateCollection() {
   const examples = await getAllExamples();
-  let varieties = await getAllVarieties();
+  let varieties = (await getAllVarieties()).map(enrichMeta);
   const metaByKey = new Map(varieties.map(v => [v.key, v]));
   const groups = new Map();
   for (const ex of examples) {
@@ -501,7 +672,7 @@ async function updateCollection() {
     const key = ex.varietyKey || makeVarietyKey(fruitType, ex.variety);
     if (!groups.has(key)) groups.set(key, []); groups.get(key).push(ex);
     if (!metaByKey.has(key)) {
-      const synthetic = { key, fruitType, name: ex.variety, synonyms:'', origin:'', tastes:[], ripenessStart:null, ripenessEnd:null, description:'' };
+      const synthetic = enrichMeta({ key, fruitType, name: ex.variety, synonyms:'', origin:'', tastes:[], ripenessStart:null, ripenessEnd:null, ripenessNote:'', usage:'', storage:'', description:'', sources:[] });
       metaByKey.set(key, synthetic); varieties.push(synthetic);
     }
   }
@@ -519,7 +690,8 @@ async function updateCollection() {
     const detail = VIEW_TYPES.filter(([key]) => counts[key]).map(([key, label]) => `${label}: ${counts[key]}`).join(' · ');
     const tastes = (meta.tastes || []).map(tasteLabel).join(', ');
     const ripe = meta.ripenessStart && meta.ripenessEnd ? `${monthLabel(meta.ripenessStart)}–${monthLabel(meta.ripenessEnd)}` : 'nicht angegeben';
-    card.innerHTML = `<div class="collection-top">${thumb}<div class="collection-main"><strong>${escapeHtml(meta.name)}</strong> <span class="badge">${escapeHtml(fruitLabel(meta.fruitType))}</span><br><span class="count">${items.length} Trainingsfoto${items.length === 1 ? '' : 's'}</span><div class="collection-meta">${tastes ? `<strong>Geschmack:</strong> ${escapeHtml(tastes)}<br>` : ''}<strong>Reifezeit:</strong> ${escapeHtml(ripe)}${meta.description ? `<br><strong>Beschreibung:</strong> ${escapeHtml(meta.description)}` : ''}${detail ? `<div class="view-summary">${escapeHtml(detail)}</div>` : ''}</div></div></div>`;
+    const knowledge = meta.builtInKnowledge ? '<span class="badge knowledge-badge">Fachwissen ergänzt</span>' : '';
+    card.innerHTML = `<div class="collection-top">${thumb}<div class="collection-main"><strong>${escapeHtml(meta.name)}</strong> <span class="badge">${escapeHtml(fruitLabel(meta.fruitType))}</span> ${knowledge}<br><span class="count">${items.length} Trainingsfoto${items.length === 1 ? '' : 's'}</span><div class="collection-meta">${tastes ? `<strong>Geschmack:</strong> ${escapeHtml(tastes)}<br>` : ''}<strong>Reifezeit:</strong> ${escapeHtml(ripe)}${meta.usage ? `<br><strong>Verwendung:</strong> ${escapeHtml(meta.usage)}` : ''}${meta.description ? `<br><strong>Beschreibung:</strong> ${escapeHtml(meta.description)}` : ''}${detail ? `<div class="view-summary">${escapeHtml(detail)}</div>` : ''}</div></div></div>`;
     list.appendChild(card);
   }
 }
@@ -532,7 +704,7 @@ async function ensureVarietyRecordsFromExamples() {
     const fruitType = ex.fruitType || 'apple';
     const key = ex.varietyKey || makeVarietyKey(fruitType, ex.variety);
     if (known.has(key)) continue;
-    await putVariety({ key, fruitType, name: normalizeName(ex.variety), synonyms:'', origin:'', tastes:[], ripenessStart:null, ripenessEnd:null, description:'', createdAt: ex.createdAt || new Date().toISOString(), updatedAt:new Date().toISOString() });
+    await putVariety({ key, fruitType, name: normalizeName(ex.variety), synonyms:'', origin:'', tastes:[], ripenessStart:null, ripenessEnd:null, ripenessNote:'', usage:'', storage:'', description:'', sources:[], referenceId:null, createdAt: ex.createdAt || new Date().toISOString(), updatedAt:new Date().toISOString() });
     known.add(key);
   }
 }
@@ -556,24 +728,24 @@ async function exportData() {
     variety: ex.variety, varietyKey: ex.varietyKey || null, fruitType: ex.fruitType || 'apple', embedding: ex.embedding,
     createdAt: ex.createdAt, viewType: ex.viewType || 'weitere', setId: ex.setId || null, image: ex.image ? await blobToDataUrl(ex.image) : null
   });
-  const blob = new Blob([JSON.stringify({version:3, exportedAt:new Date().toISOString(), varieties, examples:portableExamples})], {type:'application/json'});
+  const blob = new Blob([JSON.stringify({version:4, exportedAt:new Date().toISOString(), knowledgeVersion: window.SORTENWISSEN_VERSION || null, varieties, examples:portableExamples})], {type:'application/json'});
   const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `apfelbuch-daten-${new Date().toISOString().slice(0,10)}.json`; a.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
 async function importData(file) {
   const text = await file.text(); const data = JSON.parse(text);
-  if (!data || ![1,2,3].includes(data.version) || !Array.isArray(data.examples)) throw new Error('Ungültiges Format');
+  if (!data || ![1,2,3,4].includes(data.version) || !Array.isArray(data.examples)) throw new Error('Ungültiges Format');
   if (Array.isArray(data.varieties)) {
     for (const v of data.varieties) {
       if (!v?.name) continue; const fruitType = v.fruitType || 'apple'; const key = v.key || makeVarietyKey(fruitType, v.name);
-      await putVariety({ ...v, key, fruitType, name: normalizeName(v.name), tastes: Array.isArray(v.tastes) ? v.tastes : [] });
+      await putVariety({ ...v, key, fruitType, name: normalizeName(v.name), tastes: Array.isArray(v.tastes) ? v.tastes : [], sources: combineSources(v.sources), ripenessNote: v.ripenessNote || '', usage: v.usage || '', storage: v.storage || '' });
     }
   }
   for (const ex of data.examples) {
     if (!ex.variety || !Array.isArray(ex.embedding)) continue;
     const fruitType = ex.fruitType || 'apple'; const key = ex.varietyKey || makeVarietyKey(fruitType, ex.variety);
     await addExample({ variety: normalizeName(ex.variety), varietyKey: key, fruitType, embedding: ex.embedding, createdAt: ex.createdAt || new Date().toISOString(), viewType: ex.viewType || 'weitere', setId: ex.setId || null, image: ex.image ? dataUrlToBlob(ex.image) : null });
-    if (!(await getVariety(key))) await putVariety({ key, fruitType, name: normalizeName(ex.variety), synonyms:'', origin:'', tastes:[], ripenessStart:null, ripenessEnd:null, description:'', createdAt:new Date().toISOString(), updatedAt:new Date().toISOString() });
+    if (!(await getVariety(key))) await putVariety({ key, fruitType, name: normalizeName(ex.variety), synonyms:'', origin:'', tastes:[], ripenessStart:null, ripenessEnd:null, ripenessNote:'', usage:'', storage:'', description:'', sources:[], referenceId:null, createdAt:new Date().toISOString(), updatedAt:new Date().toISOString() });
   }
   await updateCollection();
 }
@@ -599,6 +771,11 @@ function setupInstall() {
   window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); deferredInstallPrompt = e; $('installBtn').classList.remove('hidden'); });
   $('installBtn').addEventListener('click', async () => { if (!deferredInstallPrompt) return; deferredInstallPrompt.prompt(); await deferredInstallPrompt.userChoice; deferredInstallPrompt = null; $('installBtn').classList.add('hidden'); });
 }
+
+$('varietyName').addEventListener('input', () => { const ref = updateKnowledgeMatch(); if (ref) applyReferenceToForm(ref, false, true); });
+$('varietyName').addEventListener('blur', () => { const ref = currentReference(); if (ref) applyReferenceToForm(ref, false, true); });
+$('trainFruitType').addEventListener('change', () => { const ref = updateKnowledgeMatch(); if (ref) applyReferenceToForm(ref, false, true); });
+$('applyKnowledgeBtn').addEventListener('click', () => { const ref = currentReference(); if (ref) applyReferenceToForm(ref, true, false); });
 
 $('trainImages').addEventListener('change', async e => {
   const added = await buildItems(e.target.files, true, trainItems.length, MAX_FILES - trainItems.length); trainItems.push(...added); e.target.value = ''; renderTrainGrid(); refreshActionButtons();
@@ -630,6 +807,8 @@ setupMonthSelect('ripenessStart', true);
 setupMonthSelect('ripenessEnd', true);
 setupMonthSelect('recognizeMonth', true);
 setupMonthSelect('searchMonth', true);
+setupKnownVarietiesDatalist();
+updateKnowledgeMatch();
 setupTabs();
 const initialTab = new URLSearchParams(location.search).get('bereich');
 if (['learn','recognize','search','collection'].includes(initialTab)) document.querySelector(`.tab[data-tab="${initialTab}"]`)?.click();

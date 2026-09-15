@@ -99,3 +99,13 @@ footer { text-align: center; color: var(--muted); padding: 20px 18px calc(20px +
 @media (max-width: 520px) {
   .photo-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
+
+/* Eingebautes Sorten-Fachwissen */
+.knowledge-match { margin-top: 12px; padding: 11px 12px; border-radius: 11px; border: 1px solid #cfdccd; background: #f0f6ef; color: #314637; line-height: 1.4; }
+.knowledge-button { width: 100%; margin-top: 9px; background: #dfeee0; color: #245531; border: 1px solid #bfd3c1; font-weight: 750; }
+.knowledge-button:disabled { opacity: .45; cursor: not-allowed; }
+.knowledge-sources { margin-top: 10px; padding: 10px 12px; border-radius: 10px; background: #f7f8f4; border: 1px solid var(--border); font-size: .88rem; line-height: 1.5; }
+.knowledge-sources a, .source-line a { color: var(--green-dark); text-decoration: underline; text-underline-offset: 2px; }
+.source-line { margin-top: 9px !important; padding-top: 8px; border-top: 1px dashed var(--border); font-size: .87rem; color: #536057; }
+.meta-note { color: var(--muted); font-size: .9rem; }
+.knowledge-badge { background: #e9f1df; color: #365928; }

@@ -50,9 +50,14 @@
         </div>
         <div>
           <label for="varietyName">Sortenname</label>
-          <input id="varietyName" type="text" placeholder="z. B. Boskoop" autocomplete="off" />
+          <input id="varietyName" type="text" list="knownVarieties" placeholder="z. B. Boskoop" autocomplete="off" />
+          <datalist id="knownVarieties"></datalist>
         </div>
       </div>
+
+      <div id="knowledgeMatch" class="knowledge-match">Tippe einen bekannten Sortennamen ein. Das eingebaute Fachwissen kann passende Angaben automatisch ergänzen.</div>
+      <button id="applyKnowledgeBtn" class="knowledge-button" type="button" disabled>Fachwissen übernehmen</button>
+      <p class="hint compact">Grundbestand aus BUND Lemgo und „Streuobst in Bayern“. Angaben sind kurz zusammengefasst; Reife und Geschmack können je nach Standort und Jahr schwanken.</p>
 
       <label for="synonyms">Synonyme / andere Namen</label>
       <input id="synonyms" type="text" placeholder="z. B. Schöner aus Boskoop" />
@@ -76,8 +81,23 @@
         </div>
       </div>
 
+      <div class="form-grid two">
+        <div>
+          <label for="usage">Verwendung</label>
+          <input id="usage" type="text" placeholder="z. B. Tafel, Backen, Saft, Most" />
+        </div>
+        <div>
+          <label for="storage">Lagerfähigkeit</label>
+          <input id="storage" type="text" placeholder="z. B. bis Februar im kühlen Lager" />
+        </div>
+      </div>
+
+      <label for="ripenessNote">Reifehinweis</label>
+      <input id="ripenessNote" type="text" placeholder="z. B. Pflückreife Ende September, Genussreife ab Oktober" />
+
       <label for="description">Sortenbeschreibung</label>
-      <textarea id="description" rows="5" placeholder="Aussehen, Fruchtfleisch, Verwendung, Lagerfähigkeit, Besonderheiten …"></textarea>
+      <textarea id="description" rows="5" placeholder="Aussehen, Fruchtfleisch, Besonderheiten …"></textarea>
+      <div id="knowledgeSources" class="knowledge-sources hidden"></div>
       <button id="saveVarietyBtn" class="secondary-dark full" type="button">Sortendaten speichern / aktualisieren</button>
 
       <hr class="section-divider" />
@@ -131,7 +151,7 @@
 
     <section id="search" class="panel">
       <h2>Sorten suchen</h2>
-      <p>Hier kannst du deine Sammlung auch ohne Fotos nach Name, Geschmack und Reifezeit durchsuchen.</p>
+      <p>Hier kannst du deine eigene Sammlung <strong>und das eingebaute Fachwissen</strong> nach Name, Geschmack und Reifezeit durchsuchen.</p>
 
       <label for="searchText">Name, Synonym oder Stichwort</label>
       <input id="searchText" type="text" placeholder="z. B. Boskoop, würzig, Tafelapfel …" />
@@ -176,6 +196,12 @@
     </section>
 
     <section class="info-card">
+      <h3>Fachwissen in dieser Testversion</h3>
+      <p>Ein erster Grundbestand häufiger Apfel- und Birnensorten ist direkt in der App hinterlegt. Die Angaben sind strukturierte Kurzfassungen aus den verlinkten Fachquellen und funktionieren auch ohne Live-Abfrage im Internet.</p>
+      <p class="hint">Die Quellenlinks stehen bei jeder hinterlegten Sortenbeschreibung. Später können wir den Grundbestand Schritt für Schritt erweitern.</p>
+    </section>
+
+    <section class="info-card">
       <h3>Empfohlener Fotosatz</h3>
       <ul>
         <li><strong>Profil:</strong> mehrere ausgereifte Früchte von der Seite</li>
@@ -192,6 +218,7 @@
     <small>Apfelbuch Testversion · Trainingsdaten lokal gespeichert · Vergleichsfotos werden nicht gespeichert.</small>
   </footer>
 
+  <script src="sortenwissen.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
