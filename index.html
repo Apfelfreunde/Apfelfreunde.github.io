@@ -43,8 +43,9 @@
       <div class="step-card">
         <div class="step-title"><span>1</span><strong>Fotos aufnehmen oder auswählen</strong></div>
         <div class="photo-actions">
-          <label class="photo-action camera">📷 Foto machen<input id="recognizeCamera" type="file" accept="image/*" capture="environment" hidden /></label>
+          <button id="recognizeCameraBtn" class="photo-action camera" type="button">📷 Kamera öffnen</button>
           <label class="photo-action gallery">🖼️ Galerie öffnen<input id="recognizeGallery" type="file" accept="image/*" multiple hidden /></label>
+          <input id="recognizeCamera" type="file" accept="image/*" capture="environment" hidden />
         </div>
         <p class="hint">Mehrmals Kamera oder Galerie öffnen, bis dein Satz vollständig ist. Ideal: Profil, Stielgrube, Kelchgrube und Schnittbild.</p>
         <button id="clearRecognizeSelectionBtn" class="secondary-dark small-action" type="button">Vergleichsfotos leeren</button>
@@ -59,35 +60,35 @@
       </div>
 
       <div class="step-card">
-        <div class="step-title"><span>3</span><strong>Reifezeit und Fruchtart</strong></div>
-        <div class="form-grid two">
-          <div>
-            <label for="recognizeMonth">Reife-/Fundmonat</label>
-            <select id="recognizeMonth"></select>
-          </div>
-          <div>
-            <label for="recognizeFruitType">Fruchtart</label>
-            <select id="recognizeFruitType">
-              <option value="apple">Apfel</option>
-              <option value="pear">Birne</option>
-              <option value="unknown">Unsicher / beide</option>
-            </select>
-          </div>
-        </div>
+        <div class="step-title"><span>3</span><strong>Reifezeit</strong></div>
+        <p class="hint compact">Einfach den passenden Monat antippen – genauso wie beim Geschmack.</p>
+        <div id="recognizeRipenessOptions" class="choice-grid month-choice-grid"></div>
+        <select id="recognizeMonth" class="hidden-select" aria-hidden="true" tabindex="-1"></select>
       </div>
 
-      <button id="recognizeBtn" class="primary big-primary" disabled>Sortenvorschläge anzeigen</button>
-      <div id="results" class="results"></div>
+      <div class="step-card">
+        <div class="step-title"><span>4</span><strong>Fruchtart</strong></div>
+        <div id="recognizeFruitTypeOptions" class="choice-grid fruit-choice-grid"></div>
+        <select id="recognizeFruitType" class="hidden-select" aria-hidden="true" tabindex="-1">
+          <option value="apple">Apfel</option>
+          <option value="pear">Birne</option>
+          <option value="unknown">Unsicher / beide</option>
+        </select>
+      </div>
 
       <div class="step-card optional-card">
-        <div class="step-title"><strong>📍 Standort (optional)</strong></div>
-        <p class="hint compact">Nur wenn du möchtest. Der Standort wird bei der Erkennung nicht gespeichert.</p>
+        <div class="step-title"><span>5</span><strong>📍 Standort (optional)</strong></div>
+        <p class="hint compact">Du kannst GPS verwenden oder Ort/Region selbst eintragen. Vergleichs-Standort wird nicht gespeichert.</p>
+        <input id="recognizeLocationText" type="text" placeholder="Ort / Region, z. B. Oberursel" />
         <div class="location-row">
-          <button id="recognizeLocationBtn" class="secondary-dark" type="button">Standort verwenden</button>
+          <button id="recognizeLocationBtn" class="secondary-dark" type="button">GPS-Standort verwenden</button>
           <button id="clearRecognizeLocationBtn" class="secondary-dark hidden" type="button">Standort entfernen</button>
         </div>
         <div id="recognizeLocationStatus" class="location-status">Kein Standort angegeben.</div>
       </div>
+
+      <button id="recognizeBtn" class="primary big-primary" disabled>🍎 Sorte erkennen</button>
+      <div id="results" class="results"></div>
     </section>
 
     <section id="learn" class="panel">
@@ -97,8 +98,9 @@
       <div class="step-card">
         <div class="step-title"><span>1</span><strong>Fotos aufnehmen oder auswählen</strong></div>
         <div class="photo-actions">
-          <label class="photo-action camera">📷 Foto machen<input id="trainCamera" type="file" accept="image/*" capture="environment" hidden /></label>
+          <button id="trainCameraBtn" class="photo-action camera" type="button">📷 Kamera öffnen</button>
           <label class="photo-action gallery">🖼️ Galerie öffnen<input id="trainGallery" type="file" accept="image/*" multiple hidden /></label>
+          <input id="trainCamera" type="file" accept="image/*" capture="environment" hidden />
         </div>
         <p class="hint">Empfohlen: Profil, Stielgrube, Kelchgrube und Schnittbild. Baumfoto optional. Bei Samsung kannst du die Galerie einfach mehrfach öffnen.</p>
         <button id="clearTrainSelectionBtn" class="secondary-dark small-action" type="button">Fotosatz leeren</button>
@@ -113,35 +115,37 @@
 
       <div class="step-card">
         <div class="step-title"><span>3</span><strong>Reifezeit</strong></div>
-        <div class="form-grid two">
-          <div>
-            <label for="ripenessStart">Reifezeit von</label>
-            <select id="ripenessStart"></select>
-          </div>
-          <div>
-            <label for="ripenessEnd">Reifezeit bis</label>
-            <select id="ripenessEnd"></select>
-          </div>
+        <p class="hint compact">Die Felder funktionieren wie beim Geschmack. Bei nur einem Monat wählst du bei „von“ und „bis“ denselben Monat.</p>
+        <label>Reifezeit von</label>
+        <div id="ripenessStartOptions" class="choice-grid month-choice-grid"></div>
+        <select id="ripenessStart" class="hidden-select" aria-hidden="true" tabindex="-1"></select>
+        <label>Reifezeit bis</label>
+        <div id="ripenessEndOptions" class="choice-grid month-choice-grid"></div>
+        <select id="ripenessEnd" class="hidden-select" aria-hidden="true" tabindex="-1"></select>
+      </div>
+
+      <div class="step-card optional-card">
+        <div class="step-title"><span>4</span><strong>📍 Standort (optional)</strong></div>
+        <p class="hint compact">GPS verwenden oder Ort/Region selbst eintragen. Beim Anlernen kann die Angabe lokal mit dem Fotosatz gespeichert werden.</p>
+        <input id="trainLocationText" type="text" placeholder="Ort / Region, z. B. Oberursel" />
+        <div class="location-row">
+          <button id="trainLocationBtn" class="secondary-dark" type="button">GPS-Standort verwenden</button>
+          <button id="clearTrainLocationBtn" class="secondary-dark hidden" type="button">Standort entfernen</button>
         </div>
+        <div id="trainLocationStatus" class="location-status">Kein Standort angegeben.</div>
       </div>
 
       <div class="step-card">
-        <div class="step-title"><span>4</span><strong>Welche Sorte ist es?</strong></div>
-        <div class="form-grid two">
-          <div>
-            <label for="trainFruitType">Fruchtart</label>
-            <select id="trainFruitType">
-              <option value="apple">Apfel</option>
-              <option value="pear">Birne</option>
-            </select>
-          </div>
-          <div>
-            <label for="knownVarietyMenu">Sorte aus dem Menü</label>
-            <select id="knownVarietyMenu"></select>
-          </div>
-        </div>
-        <label for="varietyName">Oder Sortenname selbst eingeben</label>
-        <input id="varietyName" type="text" list="knownVarieties" placeholder="z. B. Boskoop" autocomplete="off" />
+        <div class="step-title"><span>5</span><strong>Welche Sorte ist es?</strong></div>
+        <label>Fruchtart</label>
+        <div id="trainFruitTypeOptions" class="choice-grid fruit-choice-grid"></div>
+        <select id="trainFruitType" class="hidden-select" aria-hidden="true" tabindex="-1">
+          <option value="apple">Apfel</option>
+          <option value="pear">Birne</option>
+        </select>
+        <select id="knownVarietyMenu" class="hidden-select" aria-hidden="true" tabindex="-1"></select>
+        <label for="varietyName">Sorte suchen oder eingeben</label>
+        <input id="varietyName" type="text" list="knownVarieties" placeholder="z. B. Boskoop – beim Tippen erscheinen Vorschläge" autocomplete="off" />
         <datalist id="knownVarieties"></datalist>
 
         <div id="knowledgeMatch" class="knowledge-match">Wähle eine bekannte Sorte oder gib den Namen ein. Das Fachwissen kann passende Angaben automatisch ergänzen.</div>
@@ -176,17 +180,6 @@
       </details>
 
       <button id="addTrainingBtn" class="primary big-primary" disabled>Fotos dieser Sorte anlernen</button>
-
-      <div class="step-card optional-card">
-        <div class="step-title"><strong>📍 Standort (optional)</strong></div>
-        <p class="hint compact">Nur wenn du möchtest. Beim Anlernen kann er lokal mit dem Fotosatz gespeichert werden.</p>
-        <div class="location-row">
-          <button id="trainLocationBtn" class="secondary-dark" type="button">Standort verwenden</button>
-          <button id="clearTrainLocationBtn" class="secondary-dark hidden" type="button">Standort entfernen</button>
-        </div>
-        <div id="trainLocationStatus" class="location-status">Kein Standort angegeben.</div>
-      </div>
-
       <p class="hint">Trainingsbilder, KI-Merkmale und ein freiwilliger Trainings-Standort bleiben lokal auf diesem Gerät.</p>
     </section>
 
@@ -231,6 +224,18 @@
       </ul>
     </section>
   </main>
+
+  <div id="cameraModal" class="camera-modal hidden" role="dialog" aria-modal="true" aria-label="Kamera">
+    <div class="camera-sheet">
+      <div class="camera-head"><strong>📷 Foto aufnehmen</strong><button id="cameraCloseBtn" type="button" class="camera-close">✕</button></div>
+      <video id="cameraVideo" playsinline autoplay muted></video>
+      <div id="cameraStatus" class="camera-status">Kamera wird geöffnet …</div>
+      <div class="camera-controls">
+        <button id="cameraCaptureBtn" type="button" class="primary camera-capture">Foto übernehmen</button>
+        <button id="cameraFallbackBtn" type="button" class="secondary-dark">Kamera-App / Dateiauswahl</button>
+      </div>
+    </div>
+  </div>
 
   <footer><small>Apfelbuch Testversion · Trainingsdaten lokal gespeichert · Vergleichsfotos und Vergleichs-Standort werden nicht gespeichert.</small></footer>
   <script src="sortenwissen.js"></script>

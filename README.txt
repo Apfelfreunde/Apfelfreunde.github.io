@@ -1,10 +1,16 @@
-APFELBUCH – Testversion v7 Hessen
+Apfelbuch Testversion V8
 
 Neu in dieser Version:
-- zusätzliche hessische Apfelsorten und in Hessen verbreitete Kelteräpfel
-- zusätzliche Tafel-, Most-, Wirtschafts- und Regionalbirnen
-- regionale Kennzeichnung und Kategorien sind in der Sortensuche durchsuchbar
-- Fachangaben aus KOB Bavendorf, Streuobst in Bayern und BUND Lemgo; bei sehr seltenen hessischen Lokalsorten ergänzend Pomologen-Verein Hessen
-- Gaucherbirne ist bewusst nur mit gesicherten Minimalangaben angelegt; Geschmack/Reife werden erst nach eindeutiger Quellenprüfung ergänzt
+- Geschmacksfelder bleiben als große Auswahlfelder.
+- Reifezeit ist jetzt ebenfalls als große Auswahlfelder gestaltet (kein Dropdown im Hauptablauf).
+- Fruchtart Apfel/Birne als große Auswahlfelder.
+- Eigene direkte Kameraansicht über die Browser-Kamera; Fallback auf Kamera-App/Dateiauswahl.
+- Galerie bleibt separat erreichbar.
+- Standort optional per GPS oder manueller Ort/Region.
+- Sortenauswahl beim Anlernen über Such-/Vorschlagsfeld statt sichtbarem langen Dropdown.
+- Sortenbeschreibungen: kompakte Kurzinfos + aufklappbare ausführliche Beschreibung.
+- Bis zu 15 Fotos pro Durchgang; Vergleichsfotos werden nicht gespeichert.
 
-Bestehende Trainingsfotos und lokale Daten werden durch das Hochladen dieser Programmdateien auf GitHub nicht gelöscht.
+Update über GitHub Pages:
+Alle Dateien dieses Ordners in das Repository Apfelfreunde.github.io hochladen und Commit changes wählen.
+Danach die App auf dem Handy vollständig schließen und neu öffnen.

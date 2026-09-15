@@ -10,6 +10,8 @@ let trainItems = [];
 let recognizeItems = [];
 let trainLocation = null;
 let recognizeLocation = null;
+let cameraStream = null;
+let cameraKind = null;
 
 const $ = (id) => document.getElementById(id);
 const VIEW_TYPES = [
@@ -289,6 +291,36 @@ function setSelectedTastes(containerId, values=[]) {
   $(containerId).querySelectorAll('input[type="checkbox"]').forEach(x => { x.checked = set.has(x.value); });
 }
 
+function renderRadioChoices(containerId, selectId, options, prefix) {
+  const box = $(containerId); const select = $(selectId);
+  if (!box || !select) return;
+  box.innerHTML = '';
+  for (const [value, label] of options) {
+    const wrap = document.createElement('label'); wrap.className = 'choice';
+    const input = document.createElement('input'); input.type = 'radio'; input.name = `${prefix}-radio`; input.value = String(value);
+    const span = document.createElement('span'); span.textContent = label;
+    input.addEventListener('change', () => {
+      if (!input.checked) return;
+      select.value = String(value);
+      select.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+    wrap.append(input, span); box.appendChild(wrap);
+  }
+  syncRadioChoices(containerId, selectId);
+}
+
+function syncRadioChoices(containerId, selectId) {
+  const box = $(containerId); const select = $(selectId);
+  if (!box || !select) return;
+  const current = String(select.value || '');
+  box.querySelectorAll('input[type="radio"]').forEach(input => { input.checked = input.value === current; });
+}
+
+function renderMonthChoices(containerId, selectId, prefix) {
+  const opts = [['','weiß nicht'], ...MONTHS.map(([value,label]) => [String(value), label])];
+  renderRadioChoices(containerId, selectId, opts, prefix);
+}
+
 function setupKnownVarietiesDatalist() {
   const list = $('knownVarieties');
   if (!list) return;
@@ -363,6 +395,7 @@ function updateKnowledgeMatch(message='') {
 function applyReferenceToForm(ref=currentReference(), force=false, quiet=false) {
   if (!ref) { updateKnowledgeMatch(); return false; }
   $('trainFruitType').value = ref.fruitType;
+  syncRadioChoices('trainFruitTypeOptions', 'trainFruitType');
   $('varietyName').value = ref.name;
   const setText = (id, value) => { if (force || !$(id).value.trim()) $(id).value = value || ''; };
   setText('synonyms', ref.synonyms || (ref.aliases || []).join('; '));
@@ -374,6 +407,8 @@ function applyReferenceToForm(ref=currentReference(), force=false, quiet=false) 
   if (force || !selectedTastes('trainTasteOptions').length) setSelectedTastes('trainTasteOptions', ref.tastes || []);
   if (force || !$('ripenessStart').value) $('ripenessStart').value = ref.ripenessStart ? String(ref.ripenessStart) : '';
   if (force || !$('ripenessEnd').value) $('ripenessEnd').value = ref.ripenessEnd ? String(ref.ripenessEnd) : '';
+  syncRadioChoices('ripenessStartOptions', 'ripenessStart');
+  syncRadioChoices('ripenessEndOptions', 'ripenessEnd');
   setupKnownVarietiesMenu();
   syncKnownVarietyMenu();
   updateKnowledgeMatch(quiet ? 'Angaben ergänzt' : 'Fachwissen übernommen');
@@ -383,8 +418,21 @@ function applyReferenceToForm(ref=currentReference(), force=false, quiet=false) 
 
 function formatLocation(loc) {
   if (!loc) return 'Kein Standort angegeben.';
+  const parts = [];
+  if (loc.label) parts.push(loc.label);
+  if (Number.isFinite(loc.latitude) && Number.isFinite(loc.longitude)) parts.push(`${loc.latitude.toFixed(5)}, ${loc.longitude.toFixed(5)}`);
   const accuracy = Number.isFinite(loc.accuracy) ? ` · Genauigkeit ca. ${Math.round(loc.accuracy)} m` : '';
-  return `📍 ${loc.latitude.toFixed(5)}, ${loc.longitude.toFixed(5)}${accuracy}`;
+  return parts.length ? `📍 ${parts.join(' · ')}${accuracy}` : 'Kein Standort angegeben.';
+}
+
+function syncLocationText(kind) {
+  const input = $(`${kind}LocationText`);
+  const label = input?.value?.trim() || '';
+  let loc = kind === 'train' ? trainLocation : recognizeLocation;
+  if (label) loc = { ...(loc || {}), label };
+  else if (loc?.label) { loc = { ...loc }; delete loc.label; if (!Number.isFinite(loc.latitude)) loc = null; }
+  if (kind === 'train') trainLocation = loc; else recognizeLocation = loc;
+  renderLocation(kind);
 }
 
 function renderLocation(kind) {
@@ -396,21 +444,24 @@ function renderLocation(kind) {
 }
 
 function requestLocation(kind) {
-  if (!navigator.geolocation) return alert('Dieses Gerät unterstützt die Standortabfrage im Browser nicht.');
+  syncLocationText(kind);
+  if (!navigator.geolocation) return alert('Dieses Gerät unterstützt die Standortabfrage im Browser nicht. Du kannst Ort/Region trotzdem von Hand eintragen.');
   const btn = $(`${kind}LocationBtn`); const original = btn.textContent;
   btn.disabled = true; btn.textContent = 'Standort wird ermittelt …';
   navigator.geolocation.getCurrentPosition(pos => {
-    const loc = { latitude: pos.coords.latitude, longitude: pos.coords.longitude, accuracy: pos.coords.accuracy, capturedAt: new Date().toISOString() };
+    const current = kind === 'train' ? trainLocation : recognizeLocation;
+    const loc = { ...(current || {}), latitude: pos.coords.latitude, longitude: pos.coords.longitude, accuracy: pos.coords.accuracy, capturedAt: new Date().toISOString() };
     if (kind === 'train') trainLocation = loc; else recognizeLocation = loc;
     renderLocation(kind); btn.disabled = false; btn.textContent = original;
   }, err => {
     console.error(err); btn.disabled = false; btn.textContent = original;
-    alert(err.code === 1 ? 'Standort wurde nicht freigegeben. Du kannst die App auch ohne Standort benutzen.' : 'Standort konnte nicht ermittelt werden.');
+    alert(err.code === 1 ? 'Standort wurde nicht freigegeben. Du kannst Ort/Region von Hand eintragen.' : 'Standort konnte nicht ermittelt werden.');
   }, { enableHighAccuracy: true, timeout: 12000, maximumAge: 60000 });
 }
 
 function clearLocation(kind) {
   if (kind === 'train') trainLocation = null; else recognizeLocation = null;
+  const input = $(`${kind}LocationText`); if (input) input.value = '';
   renderLocation(kind);
 }
 
@@ -420,6 +471,53 @@ function makeTypeSelect(selected, index) {
     const opt = document.createElement('option'); opt.value = value; opt.textContent = label; opt.selected = value === selected; select.appendChild(opt);
   }
   return select;
+}
+
+function closeCamera() {
+  if (cameraStream) cameraStream.getTracks().forEach(track => track.stop());
+  cameraStream = null; cameraKind = null;
+  const video = $('cameraVideo'); if (video) video.srcObject = null;
+  $('cameraModal')?.classList.add('hidden');
+}
+
+async function openCamera(kind) {
+  const items = kind === 'train' ? trainItems : recognizeItems;
+  if (items.length >= MAX_FILES) return alert(`Maximal ${MAX_FILES} Fotos pro Durchgang.`);
+  cameraKind = kind;
+  $('cameraModal')?.classList.remove('hidden');
+  $('cameraStatus').textContent = 'Kamera wird geöffnet …';
+  try {
+    if (!navigator.mediaDevices?.getUserMedia) throw new Error('getUserMedia nicht verfügbar');
+    cameraStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' } }, audio: false });
+    const video = $('cameraVideo'); video.srcObject = cameraStream; await video.play();
+    $('cameraStatus').textContent = 'Kamera bereit. Frucht ins Bild nehmen und „Foto übernehmen“ tippen.';
+  } catch (err) {
+    console.error(err);
+    $('cameraStatus').textContent = 'Direkte Kamera konnte nicht geöffnet werden. Nutze unten „Kamera-App / Dateiauswahl“.';
+  }
+}
+
+async function captureCameraPhoto() {
+  if (!cameraKind) return;
+  const video = $('cameraVideo');
+  if (!cameraStream || !video?.videoWidth) return alert('Die Kamera ist noch nicht bereit.');
+  const canvas = document.createElement('canvas');
+  canvas.width = video.videoWidth; canvas.height = video.videoHeight;
+  canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+  const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.92));
+  if (!blob) return alert('Foto konnte nicht übernommen werden.');
+  const file = new File([blob], `apfelbuch-${Date.now()}.jpg`, { type: 'image/jpeg' });
+  const kind = cameraKind; const items = kind === 'train' ? trainItems : recognizeItems;
+  const added = await buildItems([file], kind === 'train', items.length, 1);
+  items.push(...added);
+  if (kind === 'train') renderTrainGrid(); else renderRecognizeGrid();
+  refreshActionButtons();
+  closeCamera();
+}
+
+function openCameraFallback() {
+  const kind = cameraKind; closeCamera();
+  if (kind) $(`${kind}Camera`)?.click();
 }
 
 async function buildItems(files, withTypes, startIndex = 0, availableSlots = MAX_FILES) {
@@ -521,6 +619,7 @@ function missingRecommendedTypes() {
 }
 
 async function addTrainingExamples() {
+  syncLocationText('train');
   const meta = readTrainMetadata();
   if (!meta.name) return alert('Bitte zuerst einen Sortennamen eingeben.');
   if (!trainItems.length) return alert('Bitte zuerst mindestens ein Foto auswählen.');
@@ -585,28 +684,38 @@ function ripenessMatch(month, meta) {
 }
 
 function renderMetaHtml(meta) {
-  if (!meta) return '<p class="empty">Noch keine Sortenbeschreibung hinterlegt.</p>';
-  meta = enrichMeta(meta);
+  meta = enrichMeta(meta || {});
   const tastes = (meta.tastes || []).map(tasteLabel);
   const ripeness = meta.ripenessStart && meta.ripenessEnd ? `${monthLabel(meta.ripenessStart)} bis ${monthLabel(meta.ripenessEnd)}` : 'nicht angegeben';
   const sourceLinks = combineSources(meta.sources).map(src => ({...src, safeUrl: safeExternalUrl(src.url)})).filter(src => src.safeUrl);
+  const desc = String(meta.description || '').trim();
+  const shortDesc = desc.length > 190 ? `${desc.slice(0, 187).trim()}…` : desc;
   return `
     <div class="description-box">
-      <p><strong>Fruchtart:</strong> ${escapeHtml(fruitLabel(meta.fruitType))}</p>
-      ${meta.synonyms ? `<p><strong>Synonyme:</strong> ${escapeHtml(meta.synonyms)}</p>` : ''}
-      ${meta.origin ? `<p><strong>Herkunft:</strong> ${escapeHtml(meta.origin)}</p>` : ''}
-      ${(meta.regions || []).length ? `<p><strong>Region:</strong> ${escapeHtml((meta.regions || []).join(' · '))}</p>` : ''}
-      ${(meta.categories || []).length ? `<p><strong>Einordnung:</strong> ${escapeHtml((meta.categories || []).join(' · '))}</p>` : ''}
-      <p><strong>Geschmack:</strong> ${tastes.length ? tastes.map(x => `<span class="badge">${escapeHtml(x)}</span>`).join('') : 'nicht angegeben'}</p>
-      <p><strong>Reifezeit:</strong> ${escapeHtml(ripeness)}${meta.ripenessNote ? `<br><span class="meta-note">${escapeHtml(meta.ripenessNote)}</span>` : ''}</p>
-      ${meta.usage ? `<p><strong>Verwendung:</strong> ${escapeHtml(meta.usage)}</p>` : ''}
-      ${meta.storage ? `<p><strong>Lagerfähigkeit:</strong> ${escapeHtml(meta.storage)}</p>` : ''}
-      ${meta.description ? `<p><strong>Beschreibung:</strong> ${escapeHtml(meta.description)}</p>` : '<p class="empty">Noch keine ausführliche Beschreibung hinterlegt.</p>'}
-      ${sourceLinks.length ? `<p class="source-line"><strong>Quellen:</strong> ${sourceLinks.map(src => `<a href="${escapeHtml(src.safeUrl)}" target="_blank" rel="noopener noreferrer">${escapeHtml(src.label)}</a>`).join(' · ')}</p>` : ''}
+      <div class="quick-facts">
+        <div class="quick-fact"><strong>Geschmack</strong>${tastes.length ? escapeHtml(tastes.join(' · ')) : 'nicht angegeben'}</div>
+        <div class="quick-fact"><strong>Reifezeit</strong>${escapeHtml(ripeness)}</div>
+        ${meta.usage ? `<div class="quick-fact"><strong>Verwendung</strong>${escapeHtml(meta.usage)}</div>` : ''}
+        ${meta.origin ? `<div class="quick-fact"><strong>Herkunft</strong>${escapeHtml(meta.origin)}</div>` : ''}
+      </div>
+      ${shortDesc ? `<p class="variety-summary">${escapeHtml(shortDesc)}</p>` : ''}
+      <details class="variety-details">
+        <summary>Ausführliche Sortenbeschreibung</summary>
+        <p><strong>Fruchtart:</strong> ${escapeHtml(fruitLabel(meta.fruitType))}</p>
+        ${meta.synonyms ? `<p><strong>Synonyme:</strong> ${escapeHtml(meta.synonyms)}</p>` : ''}
+        ${(meta.regions || []).length ? `<p><strong>Region:</strong> ${escapeHtml((meta.regions || []).join(' · '))}</p>` : ''}
+        ${(meta.categories || []).length ? `<p><strong>Einordnung:</strong> ${escapeHtml((meta.categories || []).join(' · '))}</p>` : ''}
+        <p><strong>Geschmack:</strong> ${tastes.length ? tastes.map(x => `<span class="badge">${escapeHtml(x)}</span>`).join('') : 'nicht angegeben'}</p>
+        <p><strong>Reifezeit:</strong> ${escapeHtml(ripeness)}${meta.ripenessNote ? `<br><span class="meta-note">${escapeHtml(meta.ripenessNote)}</span>` : ''}</p>
+        ${meta.storage ? `<p><strong>Lagerfähigkeit:</strong> ${escapeHtml(meta.storage)}</p>` : ''}
+        ${desc ? `<p><strong>Beschreibung:</strong> ${escapeHtml(desc)}</p>` : '<p class="empty">Noch keine ausführliche Beschreibung hinterlegt.</p>'}
+        ${sourceLinks.length ? `<p class="source-line"><strong>Quellen:</strong> ${sourceLinks.map(src => `<a href="${escapeHtml(src.safeUrl)}" target="_blank" rel="noopener noreferrer">${escapeHtml(src.label)}</a>`).join(' · ')}</p>` : ''}
+      </details>
     </div>`;
 }
 
 async function recognize() {
+  syncLocationText('recognize');
   if (!recognizeItems.length) return alert('Bitte zuerst mindestens ein Foto auswählen.');
   const examples = await getAllExamples();
   if (!examples.length) return alert('Bitte zuerst mindestens eine Sorte anlernen.');
@@ -672,7 +781,7 @@ async function recognize() {
     $('results').innerHTML = html;
   } catch (err) {
     console.error(err); alert('Die Erkennung ist fehlgeschlagen.');
-  } finally { btn.textContent = 'Mit Fotos + Merkmalen bestimmen'; refreshActionButtons(); }
+  } finally { btn.textContent = '🍎 Sorte erkennen'; refreshActionButtons(); }
 }
 
 async function getSearchableVarieties() {
@@ -840,7 +949,8 @@ function setupInstall() {
 
 $('varietyName').addEventListener('input', () => { const ref = updateKnowledgeMatch(); if (ref) applyReferenceToForm(ref, false, true); syncKnownVarietyMenu(); });
 $('varietyName').addEventListener('blur', () => { const ref = currentReference(); if (ref) applyReferenceToForm(ref, false, true); syncKnownVarietyMenu(); });
-$('trainFruitType').addEventListener('change', () => { setupKnownVarietiesMenu(); const ref = updateKnowledgeMatch(); if (ref) applyReferenceToForm(ref, false, true); });
+$('trainFruitType').addEventListener('change', () => { syncRadioChoices('trainFruitTypeOptions', 'trainFruitType'); setupKnownVarietiesMenu(); const ref = updateKnowledgeMatch(); if (ref) applyReferenceToForm(ref, false, true); });
+$('recognizeFruitType').addEventListener('change', () => syncRadioChoices('recognizeFruitTypeOptions', 'recognizeFruitType'));
 $('knownVarietyMenu').addEventListener('change', () => {
   const value = $('knownVarietyMenu').value;
   if (!value) { $('varietyName').value = ''; updateKnowledgeMatch(); return; }
@@ -856,8 +966,10 @@ async function addRecognizeFiles(e) {
   const added = await buildItems(e.target.files, false, recognizeItems.length, MAX_FILES - recognizeItems.length); recognizeItems.push(...added); e.target.value = ''; renderRecognizeGrid(); refreshActionButtons();
 }
 $('trainCamera').addEventListener('change', addTrainFiles);
+$('trainCameraBtn').addEventListener('click', () => openCamera('train'));
 $('trainGallery').addEventListener('change', addTrainFiles);
 $('recognizeCamera').addEventListener('change', addRecognizeFiles);
+$('recognizeCameraBtn').addEventListener('click', () => openCamera('recognize'));
 $('recognizeGallery').addEventListener('change', addRecognizeFiles);
 $('clearTrainSelectionBtn').addEventListener('click', () => { trainItems = []; $('trainCamera').value = ''; $('trainGallery').value = ''; renderTrainGrid(); refreshActionButtons(); });
 $('clearRecognizeSelectionBtn').addEventListener('click', () => { recognizeItems = []; $('recognizeCamera').value = ''; $('recognizeGallery').value = ''; $('results').innerHTML = ''; renderRecognizeGrid(); refreshActionButtons(); });
@@ -865,6 +977,12 @@ $('trainLocationBtn').addEventListener('click', () => requestLocation('train'));
 $('recognizeLocationBtn').addEventListener('click', () => requestLocation('recognize'));
 $('clearTrainLocationBtn').addEventListener('click', () => clearLocation('train'));
 $('clearRecognizeLocationBtn').addEventListener('click', () => clearLocation('recognize'));
+$('trainLocationText').addEventListener('input', () => syncLocationText('train'));
+$('recognizeLocationText').addEventListener('input', () => syncLocationText('recognize'));
+$('cameraCloseBtn').addEventListener('click', closeCamera);
+$('cameraCaptureBtn').addEventListener('click', () => captureCameraPhoto().catch(err => { console.error(err); alert('Foto konnte nicht übernommen werden.'); }));
+$('cameraFallbackBtn').addEventListener('click', openCameraFallback);
+$('cameraModal').addEventListener('click', e => { if (e.target === $('cameraModal')) closeCamera(); });
 $('shareBtn').addEventListener('click', shareApp);
 $('saveVarietyBtn').addEventListener('click', () => saveVarietyMetadata(true, false).catch(err => { console.error(err); alert('Sortendaten konnten nicht gespeichert werden.'); }));
 $('addTrainingBtn').addEventListener('click', addTrainingExamples);
@@ -887,6 +1005,11 @@ setupMonthSelect('ripenessStart', true);
 setupMonthSelect('ripenessEnd', true);
 setupMonthSelect('recognizeMonth', true);
 setupMonthSelect('searchMonth', true);
+renderMonthChoices('ripenessStartOptions', 'ripenessStart', 'ripeness-start');
+renderMonthChoices('ripenessEndOptions', 'ripenessEnd', 'ripeness-end');
+renderMonthChoices('recognizeRipenessOptions', 'recognizeMonth', 'recognize-ripeness');
+renderRadioChoices('trainFruitTypeOptions', 'trainFruitType', [['apple','🍎 Apfel'],['pear','🍐 Birne']], 'train-fruit');
+renderRadioChoices('recognizeFruitTypeOptions', 'recognizeFruitType', [['apple','🍎 Apfel'],['pear','🍐 Birne'],['unknown','❓ Unsicher']], 'recognize-fruit');
 setupKnownVarietiesDatalist();
 setupKnownVarietiesMenu();
 renderLocation('train');
