@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#2f6f3e" />
+  <meta name="description" content="Apfelbuch – Apfelsorten sammeln, anlernen und erkennen." />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="icon" href="icon-192.png" />
+  <title>Apfelbuch</title>
+  <link rel="stylesheet" href="styles.css" />
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.22.0/dist/tf.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/mobilenet@2.1.1/dist/mobilenet.min.js"></script>
+</head>
+<body>
+  <header class="app-header">
+    <div>
+      <h1>🍎 Apfelbuch</h1>
+      <p>Sorten sammeln, anlernen und erkennen</p>
+    </div>
+    <button id="installBtn" class="secondary hidden">App installieren</button>
+  </header>
+
+  <main class="container">
+    <section class="status-card" id="modelStatus">
+      <strong>KI-Modell:</strong> wird geladen …
+    </section>
+
+    <nav class="tabs" aria-label="Bereiche">
+      <button class="tab active" data-tab="learn">Sorte anlernen</button>
+      <button class="tab" data-tab="recognize">Apfel erkennen</button>
+      <button class="tab" data-tab="collection">Sammlung</button>
+    </nav>
+
+    <section id="learn" class="panel active">
+      <h2>Sorte anlernen</h2>
+      <p>Lege eine Sorte an und füge mehrere typische Fotos hinzu. Je abwechslungsreicher die Fotos, desto besser.</p>
+
+      <label for="varietyName">Sortenname</label>
+      <input id="varietyName" type="text" placeholder="z. B. Boskoop" autocomplete="off" />
+
+      <label for="trainImage">Apfelfoto</label>
+      <input id="trainImage" type="file" accept="image/*" capture="environment" />
+      <img id="trainPreview" class="preview hidden" alt="Vorschau Trainingsbild" />
+
+      <button id="addTrainingBtn" class="primary" disabled>Foto als Beispiel speichern</button>
+      <p class="hint">Empfehlung: zunächst mindestens 20–30 Fotos pro Sorte, später gern deutlich mehr.</p>
+    </section>
+
+    <section id="recognize" class="panel">
+      <h2>Apfel erkennen</h2>
+      <p>Fotografiere einen unbekannten Apfel. Die App vergleicht ihn mit deinen angelernten Sorten.</p>
+
+      <label for="recognizeImage">Apfelfoto</label>
+      <input id="recognizeImage" type="file" accept="image/*" capture="environment" />
+      <img id="recognizePreview" class="preview hidden" alt="Vorschau unbekannter Apfel" />
+
+      <button id="recognizeBtn" class="primary" disabled>Erkennen</button>
+      <div id="results" class="results"></div>
+    </section>
+
+    <section id="collection" class="panel">
+      <div class="row between">
+        <div>
+          <h2>Sammlung</h2>
+          <p>Alle angelernten Sorten und die Anzahl gespeicherter Beispiele.</p>
+        </div>
+        <div class="collection-actions">
+          <button id="exportBtn" class="secondary-dark">Trainingsdaten exportieren</button>
+          <label class="import-label secondary-dark">Trainingsdaten importieren<input id="importFile" type="file" accept="application/json" hidden></label>
+          <button id="clearBtn" class="danger">Alle Trainingsdaten löschen</button>
+        </div>
+      </div>
+      <div id="collectionList" class="collection-list"></div>
+    </section>
+
+    <section class="info-card">
+      <h3>Für gute Erkennung</h3>
+      <ul>
+        <li>mehrere Ansichten: Seite, Stiel, Kelch, Schnittbild</li>
+        <li>verschiedene Lichtverhältnisse und Hintergründe</li>
+        <li>mehrere einzelne Äpfel derselben Sorte</li>
+        <li>möglichst scharfe Fotos mit groß sichtbarem Apfel</li>
+      </ul>
+    </section>
+  </main>
+
+  <footer>
+    <small>Apfelbuch MVP · Daten bleiben zunächst lokal auf diesem Gerät.</small>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
