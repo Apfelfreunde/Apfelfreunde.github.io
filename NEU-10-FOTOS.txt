@@ -1,0 +1,10 @@
+Apfelbuch – Version mit Mehrfachauswahl
+
+Neu:
+- bis zu 10 Fotos pro Auswahl
+- für Training und Erkennung
+- empfohlene Ansichten: Profil, Stielgrube, Kelchgrube, Schnittbild
+- Baumfoto optional
+- weitere Fruchtaufnahmen möglich
+- Fotos werden beim Anlernen nach Ansichtsart markiert
+- pro Sorte können beliebig viele weitere 10er-Sätze ergänzt werden

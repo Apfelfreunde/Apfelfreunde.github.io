@@ -18,7 +18,10 @@
       <h1>🍎 Apfelbuch</h1>
       <p>Sorten sammeln, anlernen und erkennen</p>
     </div>
-    <button id="installBtn" class="secondary hidden">App installieren</button>
+    <div class="header-actions">
+      <button id="shareBtn" class="secondary">App teilen</button>
+      <button id="installBtn" class="secondary hidden">App installieren</button>
+    </div>
   </header>
 
   <main class="container">
@@ -34,30 +37,34 @@
 
     <section id="learn" class="panel active">
       <h2>Sorte anlernen</h2>
-      <p>Lege eine Sorte an und füge mehrere typische Fotos hinzu. Je abwechslungsreicher die Fotos, desto besser.</p>
+      <p><strong>Stelle einen Fotosatz mit bis zu 15 Bildern zusammen.</strong> Du kannst die Galerie dafür mehrmals öffnen. Bereits ausgewählte Fotos bleiben erhalten, bis du den Satz anlernst.</p>
 
       <label for="varietyName">Sortenname</label>
       <input id="varietyName" type="text" placeholder="z. B. Boskoop" autocomplete="off" />
 
-      <label for="trainImage">Apfelfoto</label>
-      <input id="trainImage" type="file" accept="image/*" />
-      <p class="hint">Auf Android kannst du jetzt Fotos aus der Galerie auswählen. Je nach Gerät wird zusätzlich die Kamera angeboten.</p>
-      <img id="trainPreview" class="preview hidden" alt="Vorschau Trainingsbild" />
+      <label for="trainImages">Foto(s) hinzufügen</label>
+      <input id="trainImages" type="file" accept="image/*" multiple />
+      <p class="hint"><strong>Samsung-Hinweis:</strong> Falls deine Galerie nur ein Foto pro Öffnen zulässt, tippe danach einfach erneut auf „Datei auswählen“. Die bisherigen Bilder bleiben im Fotosatz. Besonders wichtig: Profil, Stielgrube, Kelchgrube und Schnittbild. Baumfoto optional.</p>
+      <button id="clearTrainSelectionBtn" class="secondary-dark small-action" type="button">Fotosatz leeren</button>
+      <div id="trainCount" class="selection-count">Noch keine Fotos ausgewählt.</div>
+      <div id="trainPreviewGrid" class="photo-grid"></div>
 
-      <button id="addTrainingBtn" class="primary" disabled>Foto als Beispiel speichern</button>
-      <p class="hint">Empfehlung: zunächst mindestens 20–30 Fotos pro Sorte, später gern deutlich mehr.</p>
+      <button id="addTrainingBtn" class="primary" disabled>Ausgewählte Fotos anlernen</button>
+      <p class="hint">Du kannst später weitere Sätze mit jeweils bis zu 15 Fotos derselben Sorte hinzufügen. Insgesamt sind also deutlich mehr als 15 Trainingsfotos pro Sorte möglich.</p>
     </section>
 
     <section id="recognize" class="panel">
       <h2>Apfel erkennen</h2>
-      <p>Fotografiere einen unbekannten Apfel. Die App vergleicht ihn mit deinen angelernten Sorten.</p>
+      <p>Für eine bessere Bestimmung kannst du einen Vergleichssatz mit bis zu 15 Fotos zusammenstellen. Du kannst die Galerie dafür mehrmals öffnen.</p>
 
-      <label for="recognizeImage">Apfelfoto</label>
-      <input id="recognizeImage" type="file" accept="image/*" />
-      <p class="hint">Wähle ein vorhandenes Foto aus der Galerie oder nutze eine angebotene Kamera-Option.</p>
-      <img id="recognizePreview" class="preview hidden" alt="Vorschau unbekannter Apfel" />
+      <label for="recognizeImages">Vergleichsfoto(s) hinzufügen</label>
+      <input id="recognizeImages" type="file" accept="image/*" multiple />
+      <p class="hint">Falls Android nur ein Foto pro Öffnen zulässt, wähle sie nacheinander aus. Ideal sind Profil, Stielgrube, Kelchgrube und Schnittbild. Baumfoto optional. <strong>Die Vergleichsfotos werden nur für diese Erkennung benutzt und nicht gespeichert.</strong></p>
+      <button id="clearRecognizeSelectionBtn" class="secondary-dark small-action" type="button">Vergleichssatz leeren</button>
+      <div id="recognizeCount" class="selection-count">Noch keine Fotos ausgewählt.</div>
+      <div id="recognizePreviewGrid" class="photo-grid"></div>
 
-      <button id="recognizeBtn" class="primary" disabled>Erkennen</button>
+      <button id="recognizeBtn" class="primary" disabled>Mit allen Fotos erkennen</button>
       <div id="results" class="results"></div>
     </section>
 
@@ -77,18 +84,20 @@
     </section>
 
     <section class="info-card">
-      <h3>Für gute Erkennung</h3>
+      <h3>Empfohlener Fotosatz</h3>
       <ul>
-        <li>mehrere Ansichten: Seite, Stiel, Kelch, Schnittbild</li>
-        <li>verschiedene Lichtverhältnisse und Hintergründe</li>
-        <li>mehrere einzelne Äpfel derselben Sorte</li>
-        <li>möglichst scharfe Fotos mit groß sichtbarem Apfel</li>
+        <li><strong>Profil:</strong> mehrere ausgereifte Früchte von der Seite</li>
+        <li><strong>Stielgrube:</strong> Frucht von oben</li>
+        <li><strong>Kelchgrube:</strong> Frucht von unten</li>
+        <li><strong>Schnittbild:</strong> sauber angeschnitten und aufgedreht</li>
+        <li><strong>Baum:</strong> optional, falls vorhanden</li>
+        <li>bis zu 15 Fotos je Fotosatz; die Galerie kann dafür mehrmals geöffnet werden</li>
       </ul>
     </section>
   </main>
 
   <footer>
-    <small>Apfelbuch MVP · Daten bleiben zunächst lokal auf diesem Gerät.</small>
+    <small>Apfelbuch MVP · Nur Trainingsdaten werden lokal gespeichert; Vergleichsfotos werden nicht gespeichert.</small>
   </footer>
 
   <script src="app.js"></script>

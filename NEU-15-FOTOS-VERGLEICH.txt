@@ -1,0 +1,7 @@
+Apfelbuch – Änderung
+
+- Pro Auswahl können jetzt maximal 15 Fotos gewählt werden.
+- Trainingsfotos unter 'Sorte anlernen' werden lokal gespeichert und zum Lernen verwendet.
+- Fotos unter 'Apfel erkennen' dienen nur der aktuellen Vergleichskontrolle.
+- Vergleichsfotos werden NICHT in IndexedDB oder der Sammlung gespeichert.
+- Für eine Sorte können beliebig viele Trainingsdurchgänge mit jeweils bis zu 15 Fotos ergänzt werden.

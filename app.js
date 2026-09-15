@@ -1,13 +1,22 @@
 const DB_NAME = 'apfelbuch-db';
 const DB_VERSION = 1;
 const STORE = 'examples';
+const MAX_FILES = 15;
 let model = null;
 let deferredInstallPrompt = null;
-let trainImageEl = null;
-let recognizeImageEl = null;
-let trainFile = null;
+let trainItems = [];
+let recognizeItems = [];
 
 const $ = (id) => document.getElementById(id);
+const VIEW_TYPES = [
+  ['profil', 'Profil / Seite'],
+  ['stielgrube', 'Stielgrube / oben'],
+  ['kelchgrube', 'Kelchgrube / unten'],
+  ['schnittbild', 'Schnittbild / innen'],
+  ['baum', 'Baum (optional)'],
+  ['weitere', 'Weitere Fruchtaufnahme']
+];
+const DEFAULT_TYPES = ['profil', 'stielgrube', 'kelchgrube', 'schnittbild', 'baum', 'weitere', 'weitere', 'weitere', 'weitere', 'weitere', 'weitere', 'weitere', 'weitere', 'weitere', 'weitere'];
 
 function normalizeName(name) {
   return name.trim().replace(/\s+/g, ' ');
@@ -82,17 +91,33 @@ async function embeddingFromImage(img) {
   return values;
 }
 
-function fileToImage(file, preview) {
+function loadImageFromFile(file) {
   return new Promise((resolve, reject) => {
-    if (!file) return reject(new Error('Keine Datei ausgewählt'));
+    const img = new Image();
     const url = URL.createObjectURL(file);
-    preview.onload = () => {
+    img.onload = () => {
       URL.revokeObjectURL(url);
-      preview.classList.remove('hidden');
-      resolve(preview);
+      resolve(img);
     };
-    preview.onerror = reject;
-    preview.src = url;
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error('Bild konnte nicht geladen werden'));
+    };
+    img.src = url;
+  });
+}
+
+function imageToStoredBlob(img, file) {
+  return new Promise((resolve) => {
+    const maxSide = 1600;
+    const scale = Math.min(1, maxSide / Math.max(img.naturalWidth || img.width, img.naturalHeight || img.height));
+    if (scale >= 0.999) return resolve(file);
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.max(1, Math.round((img.naturalWidth || img.width) * scale));
+    canvas.height = Math.max(1, Math.round((img.naturalHeight || img.height) * scale));
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+    canvas.toBlob(blob => resolve(blob || file), 'image/jpeg', 0.88);
   });
 }
 
@@ -114,6 +139,112 @@ function dataUrlToBlob(dataUrl) {
   return new Blob([bytes], { type: mime });
 }
 
+function escapeHtml(str) {
+  return String(str).replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
+}
+
+function typeLabel(value) {
+  return (VIEW_TYPES.find(x => x[0] === value) || [null, 'Weitere'])[1];
+}
+
+function makeTypeSelect(selected, index) {
+  const select = document.createElement('select');
+  select.className = 'view-type-select';
+  select.dataset.index = index;
+  for (const [value, label] of VIEW_TYPES) {
+    const opt = document.createElement('option');
+    opt.value = value;
+    opt.textContent = label;
+    opt.selected = value === selected;
+    select.appendChild(opt);
+  }
+  return select;
+}
+
+async function buildItems(files, withTypes, startIndex = 0, availableSlots = MAX_FILES) {
+  const chosen = Array.from(files || []);
+  if (availableSlots <= 0) {
+    alert(`Der Fotosatz ist bereits voll. Maximal ${MAX_FILES} Fotos sind erlaubt.`);
+    return [];
+  }
+  if (chosen.length > availableSlots) {
+    alert(`In diesem Fotosatz sind noch ${availableSlots} Platz/Plätze frei. Es werden nur die ersten ${availableSlots} neuen Fotos übernommen.`);
+  }
+  const limited = chosen.slice(0, availableSlots);
+  const items = [];
+  for (let i = 0; i < limited.length; i++) {
+    try {
+      const img = await loadImageFromFile(limited[i]);
+      const position = startIndex + i;
+      items.push({
+        file: limited[i],
+        img,
+        type: withTypes ? (DEFAULT_TYPES[position] || 'weitere') : 'weitere'
+      });
+    } catch (err) {
+      console.error(err);
+    }
+  }
+  return items;
+}
+
+function renderTrainGrid() {
+  const grid = $('trainPreviewGrid');
+  grid.innerHTML = '';
+  $('trainCount').textContent = trainItems.length ? `${trainItems.length} von ${MAX_FILES} Fotos ausgewählt.` : 'Noch keine Fotos ausgewählt.';
+
+  trainItems.forEach((item, index) => {
+    const card = document.createElement('div');
+    card.className = 'photo-card';
+    const img = item.img.cloneNode();
+    img.className = 'multi-preview';
+    img.alt = `Trainingsfoto ${index + 1}`;
+    const number = document.createElement('div');
+    number.className = 'photo-number';
+    number.textContent = `Foto ${index + 1}`;
+    const select = makeTypeSelect(item.type, index);
+    select.addEventListener('change', () => { trainItems[index].type = select.value; });
+    const remove = document.createElement('button');
+    remove.type = 'button';
+    remove.className = 'remove-photo';
+    remove.textContent = 'Entfernen';
+    remove.addEventListener('click', () => {
+      trainItems.splice(index, 1);
+      renderTrainGrid();
+      refreshActionButtons();
+    });
+    card.append(img, number, select, remove);
+    grid.appendChild(card);
+  });
+}
+
+function renderRecognizeGrid() {
+  const grid = $('recognizePreviewGrid');
+  grid.innerHTML = '';
+  $('recognizeCount').textContent = recognizeItems.length ? `${recognizeItems.length} von ${MAX_FILES} Fotos ausgewählt.` : 'Noch keine Fotos ausgewählt.';
+  recognizeItems.forEach((item, index) => {
+    const card = document.createElement('div');
+    card.className = 'photo-card simple';
+    const img = item.img.cloneNode();
+    img.className = 'multi-preview';
+    img.alt = `Erkennungsfoto ${index + 1}`;
+    const number = document.createElement('div');
+    number.className = 'photo-number';
+    number.textContent = `Foto ${index + 1}`;
+    const remove = document.createElement('button');
+    remove.type = 'button';
+    remove.className = 'remove-photo';
+    remove.textContent = 'Entfernen';
+    remove.addEventListener('click', () => {
+      recognizeItems.splice(index, 1);
+      renderRecognizeGrid();
+      refreshActionButtons();
+    });
+    card.append(img, number, remove);
+    grid.appendChild(card);
+  });
+}
+
 async function updateCollection() {
   const examples = await getAllExamples();
   const groups = {};
@@ -133,13 +264,15 @@ async function updateCollection() {
       const url = URL.createObjectURL(items[0].image);
       thumb = `<img class="thumb" src="${url}" alt="${escapeHtml(name)}">`;
     }
-    card.innerHTML = `${thumb}<strong>${escapeHtml(name)}</strong><br><span class="count">${items.length} Trainingsfoto${items.length === 1 ? '' : 's'}</span>`;
+    const counts = {};
+    for (const item of items) counts[item.viewType || 'weitere'] = (counts[item.viewType || 'weitere'] || 0) + 1;
+    const detail = VIEW_TYPES
+      .filter(([key]) => counts[key])
+      .map(([key, label]) => `${label}: ${counts[key]}`)
+      .join(' · ');
+    card.innerHTML = `${thumb}<strong>${escapeHtml(name)}</strong><br><span class="count">${items.length} Trainingsfoto${items.length === 1 ? '' : 's'}</span>${detail ? `<div class="view-summary">${escapeHtml(detail)}</div>` : ''}`;
     list.appendChild(card);
   }
-}
-
-function escapeHtml(str) {
-  return str.replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
 }
 
 async function initModel() {
@@ -147,40 +280,73 @@ async function initModel() {
   try {
     model = await mobilenet.load({version: 2, alpha: 1.0});
     status.innerHTML = '<strong>KI-Modell:</strong> bereit ✅';
-    $('addTrainingBtn').disabled = false;
-    $('recognizeBtn').disabled = false;
+    refreshActionButtons();
   } catch (err) {
     status.innerHTML = '<strong>KI-Modell:</strong> konnte nicht geladen werden. Für den ersten Start ist Internet nötig.';
     console.error(err);
   }
 }
 
-async function addTrainingExample() {
+function refreshActionButtons() {
+  $('addTrainingBtn').disabled = !(model && trainItems.length);
+  $('recognizeBtn').disabled = !(model && recognizeItems.length);
+}
+
+function missingRecommendedTypes() {
+  const have = new Set(trainItems.map(x => x.type));
+  return ['profil', 'stielgrube', 'kelchgrube', 'schnittbild'].filter(x => !have.has(x));
+}
+
+async function addTrainingExamples() {
   const name = normalizeName($('varietyName').value);
   if (!name) return alert('Bitte zuerst einen Sortennamen eingeben.');
-  if (!trainImageEl || !trainFile) return alert('Bitte zuerst ein Foto auswählen.');
+  if (!trainItems.length) return alert('Bitte zuerst mindestens ein Foto auswählen.');
+
+  const missing = missingRecommendedTypes();
+  if (trainItems.length >= 4 && missing.length) {
+    const labels = missing.map(typeLabel).join(', ');
+    const ok = confirm(`Bei diesem Fotosatz fehlen noch empfohlene Ansichten: ${labels}.\n\nTrotzdem anlernen?`);
+    if (!ok) return;
+  }
 
   const btn = $('addTrainingBtn');
   btn.disabled = true;
-  btn.textContent = 'Wird angelernt …';
+  const setId = (crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`);
+  let saved = 0;
   try {
-    const emb = await embeddingFromImage(trainImageEl);
-    await addExample({ variety: name, embedding: emb, image: trainFile, createdAt: new Date().toISOString() });
+    for (let i = 0; i < trainItems.length; i++) {
+      btn.textContent = `Foto ${i + 1}/${trainItems.length} wird angelernt …`;
+      const item = trainItems[i];
+      const emb = await embeddingFromImage(item.img);
+      const storedImage = await imageToStoredBlob(item.img, item.file);
+      await addExample({
+        variety: name,
+        embedding: emb,
+        image: storedImage,
+        viewType: item.type,
+        setId,
+        createdAt: new Date().toISOString()
+      });
+      saved++;
+    }
     const examples = await getAllExamples();
     const count = examples.filter(x => x.variety === name).length;
     await updateCollection();
-    alert(`${name}: Trainingsfoto gespeichert. Insgesamt ${count}.`);
+    alert(`${name}: ${saved} Fotos gespeichert und angelernt. Insgesamt ${count} Trainingsfotos für diese Sorte.`);
+    trainItems = [];
+    $('trainImages').value = '';
+    renderTrainGrid();
   } catch (err) {
     console.error(err);
-    alert('Das Foto konnte nicht verarbeitet werden.');
+    alert(`Es wurden ${saved} Fotos gespeichert. Danach ist beim Verarbeiten eines Fotos ein Fehler aufgetreten.`);
   } finally {
-    btn.disabled = false;
-    btn.textContent = 'Foto als Beispiel speichern';
+    btn.textContent = 'Ausgewählte Fotos anlernen';
+    refreshActionButtons();
   }
 }
 
 async function recognize() {
-  if (!recognizeImageEl) return alert('Bitte zuerst ein Foto auswählen.');
+  if (!recognizeItems.length) return alert('Bitte zuerst mindestens ein Foto auswählen.');
   const examples = await getAllExamples();
   if (!examples.length) return alert('Bitte zuerst mindestens eine Apfelsorte anlernen.');
 
@@ -189,11 +355,15 @@ async function recognize() {
 
   const btn = $('recognizeBtn');
   btn.disabled = true;
-  btn.textContent = 'Wird erkannt …';
   $('results').innerHTML = '';
 
   try {
-    const query = await embeddingFromImage(recognizeImageEl);
+    const queries = [];
+    for (let i = 0; i < recognizeItems.length; i++) {
+      btn.textContent = `Foto ${i + 1}/${recognizeItems.length} wird ausgewertet …`;
+      queries.push(await embeddingFromImage(recognizeItems[i].img));
+    }
+    const query = averageEmbedding(queries);
     const scored = Object.entries(groups).map(([name, vectors]) => ({
       name,
       score: Math.max(0, cosineSimilarity(query, averageEmbedding(vectors)))
@@ -203,7 +373,7 @@ async function recognize() {
     const sum = expsAll.reduce((a,b) => a+b, 0) || 1;
     const top = scored.slice(0, 3).map((x, i) => ({...x, probability: expsAll[i] / sum}));
 
-    $('results').innerHTML = '<h3>Wahrscheinlichste Sorten</h3>' + top.map(x => {
+    $('results').innerHTML = `<h3>Wahrscheinlichste Sorten</h3><p class="hint">Auswertung aus ${recognizeItems.length} Foto${recognizeItems.length === 1 ? '' : 's'}. Diese Vergleichsfotos werden nicht gespeichert.</p>` + top.map(x => {
       const pct = Math.round(x.probability * 100);
       return `<div class="result-item"><strong>${escapeHtml(x.name)}</strong><span>${pct} %</span><div class="bar"><span style="width:${pct}%"></span></div></div>`;
     }).join('') + '<p class="hint">Die Prozentwerte sind relative Ähnlichkeiten innerhalb deiner Sammlung, keine botanische Garantie.</p>';
@@ -211,8 +381,8 @@ async function recognize() {
     console.error(err);
     alert('Die Erkennung ist fehlgeschlagen.');
   } finally {
-    btn.disabled = false;
-    btn.textContent = 'Erkennen';
+    btn.textContent = 'Mit allen Fotos erkennen';
+    refreshActionButtons();
   }
 }
 
@@ -225,10 +395,12 @@ async function exportData() {
       variety: ex.variety,
       embedding: ex.embedding,
       createdAt: ex.createdAt,
+      viewType: ex.viewType || 'weitere',
+      setId: ex.setId || null,
       image: ex.image ? await blobToDataUrl(ex.image) : null
     });
   }
-  const blob = new Blob([JSON.stringify({version:1, exportedAt:new Date().toISOString(), examples:portable})], {type:'application/json'});
+  const blob = new Blob([JSON.stringify({version:2, exportedAt:new Date().toISOString(), examples:portable})], {type:'application/json'});
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
@@ -240,13 +412,15 @@ async function exportData() {
 async function importData(file) {
   const text = await file.text();
   const data = JSON.parse(text);
-  if (!data || data.version !== 1 || !Array.isArray(data.examples)) throw new Error('Ungültiges Format');
+  if (!data || ![1,2].includes(data.version) || !Array.isArray(data.examples)) throw new Error('Ungültiges Format');
   for (const ex of data.examples) {
     if (!ex.variety || !Array.isArray(ex.embedding)) continue;
     await addExample({
       variety: normalizeName(ex.variety),
       embedding: ex.embedding,
       createdAt: ex.createdAt || new Date().toISOString(),
+      viewType: ex.viewType || 'weitere',
+      setId: ex.setId || null,
       image: ex.image ? dataUrlToBlob(ex.image) : null
     });
   }
@@ -260,6 +434,31 @@ function setupTabs() {
     btn.classList.add('active');
     $(btn.dataset.tab).classList.add('active');
   }));
+}
+
+async function shareApp() {
+  const shareData = {
+    title: 'Apfelbuch',
+    text: 'Schau dir die Apfelbuch-App zur Sammlung und Erkennung von Apfelsorten an.',
+    url: 'https://apfelfreunde.github.io/'
+  };
+  try {
+    if (navigator.share) {
+      await navigator.share(shareData);
+      return;
+    }
+    if (navigator.clipboard && window.isSecureContext) {
+      await navigator.clipboard.writeText(shareData.url);
+      alert('Der Link zur Apfelbuch-App wurde kopiert. Du kannst ihn jetzt z. B. in WhatsApp oder E-Mail einfügen.');
+      return;
+    }
+    window.prompt('Diesen Link kopieren und weitergeben:', shareData.url);
+  } catch (err) {
+    if (err && err.name !== 'AbortError') {
+      console.error(err);
+      window.prompt('Diesen Link kopieren und weitergeben:', shareData.url);
+    }
+  }
 }
 
 function setupInstall() {
@@ -277,19 +476,39 @@ function setupInstall() {
   });
 }
 
-$('trainImage').addEventListener('change', async (e) => {
-  try {
-    trainFile = e.target.files[0] || null;
-    trainImageEl = await fileToImage(trainFile, $('trainPreview'));
-  } catch (err) { console.error(err); }
+$('trainImages').addEventListener('change', async (e) => {
+  const added = await buildItems(e.target.files, true, trainItems.length, MAX_FILES - trainItems.length);
+  trainItems.push(...added);
+  e.target.value = '';
+  renderTrainGrid();
+  refreshActionButtons();
 });
 
-$('recognizeImage').addEventListener('change', async (e) => {
-  try { recognizeImageEl = await fileToImage(e.target.files[0], $('recognizePreview')); }
-  catch (err) { console.error(err); }
+$('recognizeImages').addEventListener('change', async (e) => {
+  const added = await buildItems(e.target.files, false, recognizeItems.length, MAX_FILES - recognizeItems.length);
+  recognizeItems.push(...added);
+  e.target.value = '';
+  renderRecognizeGrid();
+  refreshActionButtons();
 });
 
-$('addTrainingBtn').addEventListener('click', addTrainingExample);
+$('clearTrainSelectionBtn').addEventListener('click', () => {
+  trainItems = [];
+  $('trainImages').value = '';
+  renderTrainGrid();
+  refreshActionButtons();
+});
+
+$('clearRecognizeSelectionBtn').addEventListener('click', () => {
+  recognizeItems = [];
+  $('recognizeImages').value = '';
+  $('results').innerHTML = '';
+  renderRecognizeGrid();
+  refreshActionButtons();
+});
+
+$('shareBtn').addEventListener('click', shareApp);
+$('addTrainingBtn').addEventListener('click', addTrainingExamples);
 $('recognizeBtn').addEventListener('click', recognize);
 $('exportBtn').addEventListener('click', () => exportData().catch(err => { console.error(err); alert('Export fehlgeschlagen.'); }));
 $('importFile').addEventListener('change', async (e) => {
@@ -311,14 +530,11 @@ $('clearBtn').addEventListener('click', async () => {
 });
 
 setupTabs();
-
-// Öffnet bei PWA-/Android-Shortcuts direkt den gewünschten Bereich.
 const initialTab = new URLSearchParams(location.search).get('bereich');
 if (['learn', 'recognize', 'collection'].includes(initialTab)) {
   const target = document.querySelector(`.tab[data-tab="${initialTab}"]`);
   if (target) target.click();
 }
-
 setupInstall();
 updateCollection().catch(console.error);
 initModel();

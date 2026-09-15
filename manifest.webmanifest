@@ -2,17 +2,25 @@
   "id": "./",
   "name": "Apfelbuch – Sortenerkennung",
   "short_name": "Apfelbuch",
-  "description": "Apfelsorten fotografieren, sammeln, anlernen und erkennen.",
+  "description": "Apfelsorten mit bis zu 15 Fotos pro Fotosatz sammeln, anlernen und erkennen.",
   "lang": "de-DE",
   "dir": "ltr",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
-  "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
+  "display_override": [
+    "window-controls-overlay",
+    "standalone",
+    "minimal-ui"
+  ],
   "orientation": "any",
   "background_color": "#f7f7f2",
   "theme_color": "#2f6f3e",
-  "categories": ["education", "books", "productivity"],
+  "categories": [
+    "education",
+    "books",
+    "productivity"
+  ],
   "icons": [
     {
       "src": "icon-192.png",
@@ -31,13 +39,13 @@
     {
       "name": "Sorte anlernen",
       "short_name": "Anlernen",
-      "description": "Ein neues Apfelfoto als Trainingsbeispiel speichern",
+      "description": "Bis zu 15 Apfelfotos als Trainingsbeispiele speichern",
       "url": "./?bereich=learn"
     },
     {
       "name": "Apfel erkennen",
       "short_name": "Erkennen",
-      "description": "Einen unbekannten Apfel mit der Sammlung vergleichen",
+      "description": "Einen unbekannten Apfel mit bis zu 15 Fotos vergleichen",
       "url": "./?bereich=recognize"
     },
     {

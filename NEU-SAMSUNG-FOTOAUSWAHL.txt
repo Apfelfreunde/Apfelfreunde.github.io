@@ -1,0 +1,8 @@
+Neu in dieser Version:
+- Ein Fotosatz kann bis zu 15 Bilder enthalten.
+- Android/Samsung darf auch nur ein Foto pro Galerie-Aufruf liefern.
+- Bereits gewählte Fotos bleiben erhalten; einfach erneut auf Datei auswählen tippen.
+- Wenn Mehrfachauswahl angeboten wird, können weiterhin mehrere Fotos auf einmal gewählt werden.
+- Einzelne Bilder können vor dem Anlernen/Erkennen entfernt werden.
+- Fotosatz bzw. Vergleichssatz kann komplett geleert werden.
+- Vergleichsfotos werden weiterhin NICHT gespeichert.
