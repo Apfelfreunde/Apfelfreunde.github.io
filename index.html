@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="theme-color" content="#2f6f3e" />
-  <meta name="description" content="Apfelbuch – Apfel- und Birnensorten sammeln, beschreiben, anlernen und erkennen." />
+  <meta name="description" content="Apfelbuch – Apfel- und Birnensorten mit Fotos, Geschmack, Reifezeit und optionalem Standort bestimmen." />
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="icon" href="icon-192.png" />
   <title>Apfelbuch</title>
@@ -16,7 +16,7 @@
   <header class="app-header">
     <div>
       <h1>🍎 Apfelbuch</h1>
-      <p>Äpfel & Birnen sammeln, beschreiben und bestimmen</p>
+      <p>Äpfel & Birnen erkennen und Sortenwissen sammeln</p>
     </div>
     <div class="header-actions">
       <button id="shareBtn" class="secondary">App teilen</button>
@@ -30,162 +30,186 @@
     </section>
 
     <nav class="tabs" aria-label="Bereiche">
-      <button class="tab active" data-tab="learn">Sorte anlernen</button>
-      <button class="tab" data-tab="recognize">Frucht bestimmen</button>
+      <button class="tab active" data-tab="recognize">Sorte erkennen</button>
+      <button class="tab" data-tab="learn">Sorte anlernen</button>
       <button class="tab" data-tab="search">Sorten suchen</button>
       <button class="tab" data-tab="collection">Sammlung</button>
     </nav>
 
-    <section id="learn" class="panel active">
-      <h2>Sorte anlernen & beschreiben</h2>
-      <p>Lege die Sortendaten an und stelle einen Fotosatz mit bis zu <strong>15 Bildern</strong> zusammen. Weitere Fotosätze derselben Sorte kannst du später ergänzen.</p>
+    <section id="recognize" class="panel active">
+      <h2>🔎 Sorte erkennen</h2>
+      <p class="workflow-intro">Wie bei einer Bestimmungs-App: zuerst Fotos, dann optionale Merkmale. Bis zu <strong>15 Vergleichsfotos</strong> sind möglich. <strong>Sie werden nicht gespeichert.</strong></p>
 
-      <div class="form-grid two">
-        <div>
-          <label for="trainFruitType">Fruchtart</label>
-          <select id="trainFruitType">
-            <option value="apple">Apfel</option>
-            <option value="pear">Birne</option>
-          </select>
+      <div class="step-card">
+        <div class="step-title"><span>1</span><strong>Fotos aufnehmen oder auswählen</strong></div>
+        <div class="photo-actions">
+          <label class="photo-action camera">📷 Foto machen<input id="recognizeCamera" type="file" accept="image/*" capture="environment" hidden /></label>
+          <label class="photo-action gallery">🖼️ Galerie öffnen<input id="recognizeGallery" type="file" accept="image/*" multiple hidden /></label>
         </div>
-        <div>
-          <label for="varietyName">Sortenname</label>
-          <input id="varietyName" type="text" list="knownVarieties" placeholder="z. B. Boskoop" autocomplete="off" />
-          <datalist id="knownVarieties"></datalist>
+        <p class="hint">Mehrmals Kamera oder Galerie öffnen, bis dein Satz vollständig ist. Ideal: Profil, Stielgrube, Kelchgrube und Schnittbild.</p>
+        <button id="clearRecognizeSelectionBtn" class="secondary-dark small-action" type="button">Vergleichsfotos leeren</button>
+        <div id="recognizeCount" class="selection-count">Noch keine Fotos ausgewählt.</div>
+        <div id="recognizePreviewGrid" class="photo-grid"></div>
+      </div>
+
+      <div class="step-card">
+        <div class="step-title"><span>2</span><strong>Geschmack</strong></div>
+        <p class="hint compact">Nur auswählen, was du wirklich einschätzen kannst.</p>
+        <div id="recognizeTasteOptions" class="choice-grid"></div>
+      </div>
+
+      <div class="step-card">
+        <div class="step-title"><span>3</span><strong>Reifezeit und Fruchtart</strong></div>
+        <div class="form-grid two">
+          <div>
+            <label for="recognizeMonth">Reife-/Fundmonat</label>
+            <select id="recognizeMonth"></select>
+          </div>
+          <div>
+            <label for="recognizeFruitType">Fruchtart</label>
+            <select id="recognizeFruitType">
+              <option value="apple">Apfel</option>
+              <option value="pear">Birne</option>
+              <option value="unknown">Unsicher / beide</option>
+            </select>
+          </div>
         </div>
       </div>
 
-      <div id="knowledgeMatch" class="knowledge-match">Tippe einen bekannten Sortennamen ein. Das eingebaute Fachwissen kann passende Angaben automatisch ergänzen.</div>
-      <button id="applyKnowledgeBtn" class="knowledge-button" type="button" disabled>Fachwissen übernehmen</button>
-      <p class="hint compact">Grundbestand aus BUND Lemgo und „Streuobst in Bayern“. Angaben sind kurz zusammengefasst; Reife und Geschmack können je nach Standort und Jahr schwanken.</p>
+      <button id="recognizeBtn" class="primary big-primary" disabled>Sortenvorschläge anzeigen</button>
+      <div id="results" class="results"></div>
 
-      <label for="synonyms">Synonyme / andere Namen</label>
-      <input id="synonyms" type="text" placeholder="z. B. Schöner aus Boskoop" />
-
-      <label for="origin">Herkunft</label>
-      <input id="origin" type="text" placeholder="z. B. Niederlande, 19. Jahrhundert" />
-
-      <fieldset class="taste-fieldset">
-        <legend>Geschmack / Eigenschaften</legend>
-        <div id="trainTasteOptions" class="choice-grid"></div>
-      </fieldset>
-
-      <div class="form-grid two">
-        <div>
-          <label for="ripenessStart">Reifezeit von</label>
-          <select id="ripenessStart"></select>
+      <div class="step-card optional-card">
+        <div class="step-title"><strong>📍 Standort (optional)</strong></div>
+        <p class="hint compact">Nur wenn du möchtest. Der Standort wird bei der Erkennung nicht gespeichert.</p>
+        <div class="location-row">
+          <button id="recognizeLocationBtn" class="secondary-dark" type="button">Standort verwenden</button>
+          <button id="clearRecognizeLocationBtn" class="secondary-dark hidden" type="button">Standort entfernen</button>
         </div>
-        <div>
-          <label for="ripenessEnd">Reifezeit bis</label>
-          <select id="ripenessEnd"></select>
-        </div>
+        <div id="recognizeLocationStatus" class="location-status">Kein Standort angegeben.</div>
       </div>
-
-      <div class="form-grid two">
-        <div>
-          <label for="usage">Verwendung</label>
-          <input id="usage" type="text" placeholder="z. B. Tafel, Backen, Saft, Most" />
-        </div>
-        <div>
-          <label for="storage">Lagerfähigkeit</label>
-          <input id="storage" type="text" placeholder="z. B. bis Februar im kühlen Lager" />
-        </div>
-      </div>
-
-      <label for="ripenessNote">Reifehinweis</label>
-      <input id="ripenessNote" type="text" placeholder="z. B. Pflückreife Ende September, Genussreife ab Oktober" />
-
-      <label for="description">Sortenbeschreibung</label>
-      <textarea id="description" rows="5" placeholder="Aussehen, Fruchtfleisch, Besonderheiten …"></textarea>
-      <div id="knowledgeSources" class="knowledge-sources hidden"></div>
-      <button id="saveVarietyBtn" class="secondary-dark full" type="button">Sortendaten speichern / aktualisieren</button>
-
-      <hr class="section-divider" />
-
-      <label for="trainImages">Trainingsfoto(s) hinzufügen</label>
-      <input id="trainImages" type="file" accept="image/*" multiple />
-      <p class="hint"><strong>Samsung:</strong> Falls die Galerie nur ein Foto pro Öffnen zulässt, einfach erneut „Datei auswählen“ antippen. Bereits gewählte Fotos bleiben erhalten. Empfohlen: Profil, Stielgrube, Kelchgrube, Schnittbild; Baumfoto optional.</p>
-      <button id="clearTrainSelectionBtn" class="secondary-dark small-action" type="button">Fotosatz leeren</button>
-      <div id="trainCount" class="selection-count">Noch keine Fotos ausgewählt.</div>
-      <div id="trainPreviewGrid" class="photo-grid"></div>
-
-      <button id="addTrainingBtn" class="primary" disabled>Ausgewählte Fotos anlernen</button>
-      <p class="hint">Die Trainingsbilder und ihre KI-Merkmale werden lokal auf diesem Gerät gespeichert.</p>
     </section>
 
-    <section id="recognize" class="panel">
-      <h2>Apfel oder Birne bestimmen</h2>
-      <p>Bis zu 15 Vergleichsfotos plus Geschmack und Reifezeit können gemeinsam bewertet werden. <strong>Die Vergleichsfotos werden nicht gespeichert.</strong></p>
+    <section id="learn" class="panel">
+      <h2>🧠 Sorte anlernen</h2>
+      <p class="workflow-intro">Hier gibst du der KI bekannte Beispiele. Pro Durchgang kannst du bis zu <strong>15 Trainingsfotos</strong> hinzufügen; später weitere Sätze derselben Sorte.</p>
 
-      <div class="form-grid two">
-        <div>
-          <label for="recognizeFruitType">Fruchtart</label>
-          <select id="recognizeFruitType">
-            <option value="apple">Apfel</option>
-            <option value="pear">Birne</option>
-            <option value="unknown">Unsicher / beide</option>
-          </select>
+      <div class="step-card">
+        <div class="step-title"><span>1</span><strong>Fotos aufnehmen oder auswählen</strong></div>
+        <div class="photo-actions">
+          <label class="photo-action camera">📷 Foto machen<input id="trainCamera" type="file" accept="image/*" capture="environment" hidden /></label>
+          <label class="photo-action gallery">🖼️ Galerie öffnen<input id="trainGallery" type="file" accept="image/*" multiple hidden /></label>
         </div>
-        <div>
-          <label for="recognizeMonth">Reife-/Fundmonat</label>
-          <select id="recognizeMonth"></select>
+        <p class="hint">Empfohlen: Profil, Stielgrube, Kelchgrube und Schnittbild. Baumfoto optional. Bei Samsung kannst du die Galerie einfach mehrfach öffnen.</p>
+        <button id="clearTrainSelectionBtn" class="secondary-dark small-action" type="button">Fotosatz leeren</button>
+        <div id="trainCount" class="selection-count">Noch keine Fotos ausgewählt.</div>
+        <div id="trainPreviewGrid" class="photo-grid"></div>
+      </div>
+
+      <div class="step-card">
+        <div class="step-title"><span>2</span><strong>Geschmack / Eigenschaften</strong></div>
+        <div id="trainTasteOptions" class="choice-grid"></div>
+      </div>
+
+      <div class="step-card">
+        <div class="step-title"><span>3</span><strong>Reifezeit</strong></div>
+        <div class="form-grid two">
+          <div>
+            <label for="ripenessStart">Reifezeit von</label>
+            <select id="ripenessStart"></select>
+          </div>
+          <div>
+            <label for="ripenessEnd">Reifezeit bis</label>
+            <select id="ripenessEnd"></select>
+          </div>
         </div>
       </div>
 
-      <fieldset class="taste-fieldset">
-        <legend>Wie schmeckt die Frucht?</legend>
-        <p class="hint compact">Nur auswählen, was du wirklich einschätzen kannst. Geschmack ist ein Zusatzkriterium.</p>
-        <div id="recognizeTasteOptions" class="choice-grid"></div>
-      </fieldset>
+      <div class="step-card">
+        <div class="step-title"><span>4</span><strong>Welche Sorte ist es?</strong></div>
+        <div class="form-grid two">
+          <div>
+            <label for="trainFruitType">Fruchtart</label>
+            <select id="trainFruitType">
+              <option value="apple">Apfel</option>
+              <option value="pear">Birne</option>
+            </select>
+          </div>
+          <div>
+            <label for="knownVarietyMenu">Sorte aus dem Menü</label>
+            <select id="knownVarietyMenu"></select>
+          </div>
+        </div>
+        <label for="varietyName">Oder Sortenname selbst eingeben</label>
+        <input id="varietyName" type="text" list="knownVarieties" placeholder="z. B. Boskoop" autocomplete="off" />
+        <datalist id="knownVarieties"></datalist>
 
-      <label for="recognizeImages">Vergleichsfoto(s) hinzufügen</label>
-      <input id="recognizeImages" type="file" accept="image/*" multiple />
-      <p class="hint">Ideal sind Profil, Stielgrube, Kelchgrube und Schnittbild. Die Fotos bleiben nur während dieser Sitzung im Arbeitsspeicher und werden nicht in der Sammlung abgelegt.</p>
-      <button id="clearRecognizeSelectionBtn" class="secondary-dark small-action" type="button">Vergleichssatz leeren</button>
-      <div id="recognizeCount" class="selection-count">Noch keine Fotos ausgewählt.</div>
-      <div id="recognizePreviewGrid" class="photo-grid"></div>
+        <div id="knowledgeMatch" class="knowledge-match">Wähle eine bekannte Sorte oder gib den Namen ein. Das Fachwissen kann passende Angaben automatisch ergänzen.</div>
+        <button id="applyKnowledgeBtn" class="knowledge-button" type="button" disabled>Fachwissen übernehmen</button>
+      </div>
 
-      <button id="recognizeBtn" class="primary" disabled>Mit Fotos + Merkmalen bestimmen</button>
-      <div id="results" class="results"></div>
+      <details class="advanced-details">
+        <summary>Weitere Sorteninfos anzeigen / bearbeiten</summary>
+        <div class="advanced-content">
+          <p class="hint compact">Grundbestand aus Fachquellen. Reife und Geschmack können je nach Standort und Jahr schwanken.</p>
+          <label for="synonyms">Synonyme / andere Namen</label>
+          <input id="synonyms" type="text" placeholder="z. B. Schöner aus Boskoop" />
+          <label for="origin">Herkunft</label>
+          <input id="origin" type="text" placeholder="z. B. Niederlande, 19. Jahrhundert" />
+          <div class="form-grid two">
+            <div>
+              <label for="usage">Verwendung</label>
+              <input id="usage" type="text" placeholder="z. B. Tafel, Backen, Saft, Most" />
+            </div>
+            <div>
+              <label for="storage">Lagerfähigkeit</label>
+              <input id="storage" type="text" placeholder="z. B. bis Februar" />
+            </div>
+          </div>
+          <label for="ripenessNote">Reifehinweis</label>
+          <input id="ripenessNote" type="text" placeholder="z. B. Pflückreife Ende September" />
+          <label for="description">Sortenbeschreibung</label>
+          <textarea id="description" rows="5" placeholder="Aussehen, Fruchtfleisch, Besonderheiten …"></textarea>
+          <div id="knowledgeSources" class="knowledge-sources hidden"></div>
+          <button id="saveVarietyBtn" class="secondary-dark full" type="button">Sortendaten speichern / aktualisieren</button>
+        </div>
+      </details>
+
+      <button id="addTrainingBtn" class="primary big-primary" disabled>Fotos dieser Sorte anlernen</button>
+
+      <div class="step-card optional-card">
+        <div class="step-title"><strong>📍 Standort (optional)</strong></div>
+        <p class="hint compact">Nur wenn du möchtest. Beim Anlernen kann er lokal mit dem Fotosatz gespeichert werden.</p>
+        <div class="location-row">
+          <button id="trainLocationBtn" class="secondary-dark" type="button">Standort verwenden</button>
+          <button id="clearTrainLocationBtn" class="secondary-dark hidden" type="button">Standort entfernen</button>
+        </div>
+        <div id="trainLocationStatus" class="location-status">Kein Standort angegeben.</div>
+      </div>
+
+      <p class="hint">Trainingsbilder, KI-Merkmale und ein freiwilliger Trainings-Standort bleiben lokal auf diesem Gerät.</p>
     </section>
 
     <section id="search" class="panel">
       <h2>Sorten suchen</h2>
       <p>Hier kannst du deine eigene Sammlung <strong>und das eingebaute Fachwissen</strong> nach Name, Geschmack und Reifezeit durchsuchen.</p>
-
       <label for="searchText">Name, Synonym oder Stichwort</label>
       <input id="searchText" type="text" placeholder="z. B. Boskoop, würzig, Tafelapfel …" />
-
       <div class="form-grid two">
         <div>
           <label for="searchFruitType">Fruchtart</label>
-          <select id="searchFruitType">
-            <option value="all">Alle</option>
-            <option value="apple">Apfel</option>
-            <option value="pear">Birne</option>
-          </select>
+          <select id="searchFruitType"><option value="all">Alle</option><option value="apple">Apfel</option><option value="pear">Birne</option></select>
         </div>
-        <div>
-          <label for="searchMonth">Reifezeit</label>
-          <select id="searchMonth"></select>
-        </div>
+        <div><label for="searchMonth">Reifezeit</label><select id="searchMonth"></select></div>
       </div>
-
-      <fieldset class="taste-fieldset">
-        <legend>Gewünschter Geschmack</legend>
-        <div id="searchTasteOptions" class="choice-grid"></div>
-      </fieldset>
-
+      <fieldset class="taste-fieldset"><legend>Gewünschter Geschmack</legend><div id="searchTasteOptions" class="choice-grid"></div></fieldset>
       <button id="searchBtn" class="primary" type="button">Passende Sorten anzeigen</button>
       <div id="searchResults" class="results"></div>
     </section>
 
     <section id="collection" class="panel">
       <div class="row between">
-        <div>
-          <h2>Sammlung</h2>
-          <p>Deine Sortenbeschreibungen und angelernten Trainingsbilder.</p>
-        </div>
+        <div><h2>Sammlung</h2><p>Deine Sortenbeschreibungen und angelernten Trainingsbilder.</p></div>
         <div class="collection-actions">
           <button id="exportBtn" class="secondary-dark">Daten exportieren</button>
           <label class="import-label secondary-dark">Daten importieren<input id="importFile" type="file" accept="application/json" hidden></label>
@@ -196,12 +220,6 @@
     </section>
 
     <section class="info-card">
-      <h3>Fachwissen in dieser Testversion</h3>
-      <p>Ein erster Grundbestand häufiger Apfel- und Birnensorten ist direkt in der App hinterlegt. Die Angaben sind strukturierte Kurzfassungen aus den verlinkten Fachquellen und funktionieren auch ohne Live-Abfrage im Internet.</p>
-      <p class="hint">Die Quellenlinks stehen bei jeder hinterlegten Sortenbeschreibung. Später können wir den Grundbestand Schritt für Schritt erweitern.</p>
-    </section>
-
-    <section class="info-card">
       <h3>Empfohlener Fotosatz</h3>
       <ul>
         <li><strong>Profil:</strong> mehrere ausgereifte Früchte von der Seite</li>
@@ -209,15 +227,12 @@
         <li><strong>Kelchgrube:</strong> Frucht von unten</li>
         <li><strong>Schnittbild:</strong> sauber angeschnitten und aufgedreht</li>
         <li><strong>Baum:</strong> optional</li>
-        <li>bis zu 15 Fotos je Durchgang; später beliebig viele weitere Trainingssätze</li>
+        <li>bis zu 15 Fotos je Durchgang; später weitere Trainingssätze möglich</li>
       </ul>
     </section>
   </main>
 
-  <footer>
-    <small>Apfelbuch Testversion · Trainingsdaten lokal gespeichert · Vergleichsfotos werden nicht gespeichert.</small>
-  </footer>
-
+  <footer><small>Apfelbuch Testversion · Trainingsdaten lokal gespeichert · Vergleichsfotos und Vergleichs-Standort werden nicht gespeichert.</small></footer>
   <script src="sortenwissen.js"></script>
   <script src="app.js"></script>
 </body>

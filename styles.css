@@ -109,3 +109,25 @@ footer { text-align: center; color: var(--muted); padding: 20px 18px calc(20px +
 .source-line { margin-top: 9px !important; padding-top: 8px; border-top: 1px dashed var(--border); font-size: .87rem; color: #536057; }
 .meta-note { color: var(--muted); font-size: .9rem; }
 .knowledge-badge { background: #e9f1df; color: #365928; }
+
+/* V6: geführter PlantNet-artiger Ablauf */
+.workflow-intro { color: #425047; line-height: 1.5; margin-bottom: 16px; }
+.step-card { margin: 14px 0; padding: 15px; border: 1px solid var(--border); border-radius: 15px; background: #fbfcfa; }
+.step-title { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; font-size: 1.05rem; }
+.step-title > span { display: inline-flex; width: 30px; height: 30px; border-radius: 50%; align-items: center; justify-content: center; background: var(--green); color: white; font-weight: 800; flex: 0 0 auto; }
+.photo-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin: 10px 0 6px; }
+.photo-action { margin: 0; padding: 15px 12px; border-radius: 13px; text-align: center; cursor: pointer; font-weight: 750; border: 1px solid #bdd0c0; background: #edf5ee; color: #245531; }
+.photo-action.camera { background: var(--green); border-color: var(--green); color: white; }
+.photo-action:active { transform: translateY(1px); }
+.location-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+.location-status { margin-top: 9px; padding: 10px 12px; border-radius: 10px; background: #eef3ed; color: #405047; font-size: .92rem; word-break: break-word; }
+.location-result { margin: 10px 0; padding: 11px 12px; border: 1px solid #cfdccd; border-radius: 10px; background: #f1f7ef; line-height: 1.45; }
+.advanced-details { margin: 15px 0; border: 1px solid var(--border); border-radius: 13px; background: #fafbf9; overflow: hidden; }
+.advanced-details summary { padding: 13px 14px; cursor: pointer; font-weight: 700; color: #344238; }
+.advanced-content { padding: 0 14px 14px; }
+.big-primary { padding: 15px 16px; font-size: 1.03rem; }
+@media (max-width: 520px) {
+  .step-card { padding: 13px; }
+  .photo-actions { grid-template-columns: 1fr 1fr; }
+  .photo-action { padding: 14px 8px; }
+}

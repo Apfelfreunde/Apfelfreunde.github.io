@@ -8,6 +8,8 @@ let model = null;
 let deferredInstallPrompt = null;
 let trainItems = [];
 let recognizeItems = [];
+let trainLocation = null;
+let recognizeLocation = null;
 
 const $ = (id) => document.getElementById(id);
 const VIEW_TYPES = [
@@ -78,7 +80,7 @@ function referenceToMeta(ref) {
     tastes: Array.isArray(ref.tastes) ? [...ref.tastes] : [],
     ripenessStart: ref.ripenessStart || null, ripenessEnd: ref.ripenessEnd || null,
     ripenessNote: ref.ripenessNote || '', usage: ref.usage || '', storage: ref.storage || '',
-    description: ref.description || '', sources: combineSources(ref.sources),
+    description: ref.description || '', regions: Array.isArray(ref.regions) ? [...ref.regions] : [], categories: Array.isArray(ref.categories) ? [...ref.categories] : [], sources: combineSources(ref.sources),
     referenceId: ref.id, builtInKnowledge: true
   };
 }
@@ -98,6 +100,8 @@ function enrichMeta(meta) {
     ripenessNote: meta.ripenessNote || base.ripenessNote,
     usage: meta.usage || base.usage, storage: meta.storage || base.storage,
     description: meta.description || base.description,
+    regions: Array.isArray(meta.regions) && meta.regions.length ? meta.regions : base.regions,
+    categories: Array.isArray(meta.categories) && meta.categories.length ? meta.categories : base.categories,
     sources: combineSources(meta.sources, base.sources), referenceId: ref.id, builtInKnowledge: true
   };
 }
@@ -301,6 +305,30 @@ function setupKnownVarietiesDatalist() {
   }
 }
 
+function setupKnownVarietiesMenu() {
+  const menu = $('knownVarietyMenu');
+  if (!menu) return;
+  const fruitType = $('trainFruitType')?.value || 'apple';
+  const current = normalizeLookup($('varietyName')?.value || '');
+  menu.innerHTML = '<option value="">– Sorte auswählen –</option>';
+  const refs = REFERENCE_VARIETIES.filter(ref => ref.fruitType === fruitType).sort((a,b) => a.name.localeCompare(b.name, 'de'));
+  for (const ref of refs) {
+    const opt = document.createElement('option'); opt.value = ref.name; opt.textContent = ref.name;
+    if (current && referenceNames(ref).some(n => normalizeLookup(n) === current)) opt.selected = true;
+    menu.appendChild(opt);
+  }
+  const custom = document.createElement('option'); custom.value = '__custom__'; custom.textContent = 'Andere / neue Sorte …'; menu.appendChild(custom);
+}
+
+function syncKnownVarietyMenu() {
+  const menu = $('knownVarietyMenu');
+  if (!menu) return;
+  const ref = currentReference();
+  if (ref && ref.fruitType === $('trainFruitType').value) menu.value = ref.name;
+  else if (normalizeName($('varietyName').value)) menu.value = '__custom__';
+  else menu.value = '';
+}
+
 function currentReference() {
   const name = $('varietyName')?.value || '';
   const type = $('trainFruitType')?.value || null;
@@ -346,9 +374,44 @@ function applyReferenceToForm(ref=currentReference(), force=false, quiet=false) 
   if (force || !selectedTastes('trainTasteOptions').length) setSelectedTastes('trainTasteOptions', ref.tastes || []);
   if (force || !$('ripenessStart').value) $('ripenessStart').value = ref.ripenessStart ? String(ref.ripenessStart) : '';
   if (force || !$('ripenessEnd').value) $('ripenessEnd').value = ref.ripenessEnd ? String(ref.ripenessEnd) : '';
+  setupKnownVarietiesMenu();
+  syncKnownVarietyMenu();
   updateKnowledgeMatch(quiet ? 'Angaben ergänzt' : 'Fachwissen übernommen');
   renderKnowledgeSources(ref.sources || []);
   return true;
+}
+
+function formatLocation(loc) {
+  if (!loc) return 'Kein Standort angegeben.';
+  const accuracy = Number.isFinite(loc.accuracy) ? ` · Genauigkeit ca. ${Math.round(loc.accuracy)} m` : '';
+  return `📍 ${loc.latitude.toFixed(5)}, ${loc.longitude.toFixed(5)}${accuracy}`;
+}
+
+function renderLocation(kind) {
+  const loc = kind === 'train' ? trainLocation : recognizeLocation;
+  const status = $(`${kind}LocationStatus`);
+  const clearId = kind === 'train' ? 'clearTrainLocationBtn' : 'clearRecognizeLocationBtn';
+  if (status) status.textContent = formatLocation(loc);
+  if ($(clearId)) $(clearId).classList.toggle('hidden', !loc);
+}
+
+function requestLocation(kind) {
+  if (!navigator.geolocation) return alert('Dieses Gerät unterstützt die Standortabfrage im Browser nicht.');
+  const btn = $(`${kind}LocationBtn`); const original = btn.textContent;
+  btn.disabled = true; btn.textContent = 'Standort wird ermittelt …';
+  navigator.geolocation.getCurrentPosition(pos => {
+    const loc = { latitude: pos.coords.latitude, longitude: pos.coords.longitude, accuracy: pos.coords.accuracy, capturedAt: new Date().toISOString() };
+    if (kind === 'train') trainLocation = loc; else recognizeLocation = loc;
+    renderLocation(kind); btn.disabled = false; btn.textContent = original;
+  }, err => {
+    console.error(err); btn.disabled = false; btn.textContent = original;
+    alert(err.code === 1 ? 'Standort wurde nicht freigegeben. Du kannst die App auch ohne Standort benutzen.' : 'Standort konnte nicht ermittelt werden.');
+  }, { enableHighAccuracy: true, timeout: 12000, maximumAge: 60000 });
+}
+
+function clearLocation(kind) {
+  if (kind === 'train') trainLocation = null; else recognizeLocation = null;
+  renderLocation(kind);
 }
 
 function makeTypeSelect(selected, index) {
@@ -475,7 +538,7 @@ async function addTrainingExamples() {
       const item = trainItems[i]; const emb = await embeddingFromImage(item.img); const storedImage = await imageToStoredBlob(item.img, item.file);
       await addExample({
         variety: savedMeta.name, varietyKey: savedMeta.key, fruitType: savedMeta.fruitType,
-        embedding: emb, image: storedImage, viewType: item.type, setId, createdAt: new Date().toISOString()
+        embedding: emb, image: storedImage, viewType: item.type, setId, location: trainLocation ? { ...trainLocation } : null, createdAt: new Date().toISOString()
       });
       saved++;
     }
@@ -483,7 +546,7 @@ async function addTrainingExamples() {
     const count = examples.filter(x => (x.varietyKey || makeVarietyKey(x.fruitType || 'apple', x.variety)) === savedMeta.key).length;
     await updateCollection();
     alert(`${savedMeta.name}: ${saved} Fotos gespeichert und angelernt. Insgesamt ${count} Trainingsfotos für diese Sorte.`);
-    trainItems = []; $('trainImages').value = ''; renderTrainGrid();
+    trainItems = []; $('trainCamera').value = ''; $('trainGallery').value = ''; renderTrainGrid();
   } catch (err) {
     console.error(err); alert(`Es wurden ${saved} Fotos gespeichert. Danach ist beim Verarbeiten ein Fehler aufgetreten.`);
   } finally { btn.textContent = 'Ausgewählte Fotos anlernen'; refreshActionButtons(); }
@@ -532,6 +595,8 @@ function renderMetaHtml(meta) {
       <p><strong>Fruchtart:</strong> ${escapeHtml(fruitLabel(meta.fruitType))}</p>
       ${meta.synonyms ? `<p><strong>Synonyme:</strong> ${escapeHtml(meta.synonyms)}</p>` : ''}
       ${meta.origin ? `<p><strong>Herkunft:</strong> ${escapeHtml(meta.origin)}</p>` : ''}
+      ${(meta.regions || []).length ? `<p><strong>Region:</strong> ${escapeHtml((meta.regions || []).join(' · '))}</p>` : ''}
+      ${(meta.categories || []).length ? `<p><strong>Einordnung:</strong> ${escapeHtml((meta.categories || []).join(' · '))}</p>` : ''}
       <p><strong>Geschmack:</strong> ${tastes.length ? tastes.map(x => `<span class="badge">${escapeHtml(x)}</span>`).join('') : 'nicht angegeben'}</p>
       <p><strong>Reifezeit:</strong> ${escapeHtml(ripeness)}${meta.ripenessNote ? `<br><span class="meta-note">${escapeHtml(meta.ripenessNote)}</span>` : ''}</p>
       ${meta.usage ? `<p><strong>Verwendung:</strong> ${escapeHtml(meta.usage)}</p>` : ''}
@@ -588,8 +653,9 @@ async function recognize() {
     const top = scored.slice(0, 3).map((x, i) => ({ ...x, probability: exps[i] / sum }));
     const uncertain = top[0] && (top[0].combined < 0.52 || top[0].imageScore < 0.40);
 
-    let html = `<h3>Wahrscheinlichste Sorten</h3><p class="hint">Auswertung aus ${recognizeItems.length} Foto${recognizeItems.length === 1 ? '' : 's'}${selectedTaste.length ? ', Geschmack' : ''}${selectedMonth ? ' und Reifezeit' : ''}. Vergleichsfotos werden nicht gespeichert.</p>`;
+    let html = `<h3>Wahrscheinlichste Sorten</h3><p class="hint">Auswertung aus ${recognizeItems.length} Foto${recognizeItems.length === 1 ? '' : 's'}${selectedTaste.length ? ', Geschmack' : ''}${selectedMonth ? ' und Reifezeit' : ''}${recognizeLocation ? ', Standort als Zusatzinfo' : ''}. Vergleichsfotos und Vergleichs-Standort werden nicht gespeichert.</p>`;
     if (uncertain) html += '<div class="warning"><strong>Keine sichere Bestimmung.</strong> Die beste Übereinstimmung ist noch zu schwach. Weitere Ansichten oder mehr Trainingsbilder können helfen.</div>';
+    if (recognizeLocation) html += `<div class="location-result"><strong>📍 Standort:</strong> ${escapeHtml(formatLocation(recognizeLocation).replace('📍 ', ''))}<br><span class="hint">Der Standort ist in dieser Testversion noch kein Bewertungsfaktor. Später können regionale Vorkommen einbezogen werden.</span></div>`;
     html += top.map(x => {
       const pct = Math.round(x.probability * 100);
       const imgPct = Math.round(x.imageScore * 100);
@@ -637,7 +703,7 @@ async function searchVarieties() {
   }
 
   let rows = varieties.filter(v => fruit === 'all' || v.fruitType === fruit).map(v => {
-    const hay = normalizeLookup(`${v.name || ''} ${v.synonyms || ''} ${v.origin || ''} ${v.description || ''} ${v.usage || ''} ${v.storage || ''} ${v.ripenessNote || ''}`);
+    const hay = normalizeLookup(`${v.name || ''} ${v.synonyms || ''} ${v.origin || ''} ${v.description || ''} ${v.usage || ''} ${v.storage || ''} ${v.ripenessNote || ''} ${(v.regions || []).join(' ')} ${(v.categories || []).join(' ')}`);
     const textMatches = !text || hay.includes(text);
     const textScore = text ? (textMatches ? (normalizeLookup(v.name).includes(text) ? 1 : 0.75) : 0) : null;
     const tScore = tasteMatch(tastes, v.tastes || []);
@@ -650,7 +716,7 @@ async function searchVarieties() {
     return { v, score: total / weight, photo: photoByKey.get(v.key) || null };
   }).filter(x => {
     if (!text) return true;
-    const hay = normalizeLookup(`${x.v.name || ''} ${x.v.synonyms || ''} ${x.v.origin || ''} ${x.v.description || ''} ${x.v.usage || ''} ${x.v.storage || ''} ${x.v.ripenessNote || ''}`);
+    const hay = normalizeLookup(`${x.v.name || ''} ${x.v.synonyms || ''} ${x.v.origin || ''} ${x.v.description || ''} ${x.v.usage || ''} ${x.v.storage || ''} ${x.v.ripenessNote || ''} ${(x.v.regions || []).join(' ')} ${(x.v.categories || []).join(' ')}`);
     return hay.includes(text);
   }).sort((a,b) => b.score - a.score || String(a.v.name).localeCompare(String(b.v.name), 'de')).slice(0, 30);
 
@@ -726,7 +792,7 @@ async function exportData() {
   const portableExamples = [];
   for (const ex of examples) portableExamples.push({
     variety: ex.variety, varietyKey: ex.varietyKey || null, fruitType: ex.fruitType || 'apple', embedding: ex.embedding,
-    createdAt: ex.createdAt, viewType: ex.viewType || 'weitere', setId: ex.setId || null, image: ex.image ? await blobToDataUrl(ex.image) : null
+    createdAt: ex.createdAt, viewType: ex.viewType || 'weitere', setId: ex.setId || null, location: ex.location || null, image: ex.image ? await blobToDataUrl(ex.image) : null
   });
   const blob = new Blob([JSON.stringify({version:4, exportedAt:new Date().toISOString(), knowledgeVersion: window.SORTENWISSEN_VERSION || null, varieties, examples:portableExamples})], {type:'application/json'});
   const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `apfelbuch-daten-${new Date().toISOString().slice(0,10)}.json`; a.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);
@@ -744,7 +810,7 @@ async function importData(file) {
   for (const ex of data.examples) {
     if (!ex.variety || !Array.isArray(ex.embedding)) continue;
     const fruitType = ex.fruitType || 'apple'; const key = ex.varietyKey || makeVarietyKey(fruitType, ex.variety);
-    await addExample({ variety: normalizeName(ex.variety), varietyKey: key, fruitType, embedding: ex.embedding, createdAt: ex.createdAt || new Date().toISOString(), viewType: ex.viewType || 'weitere', setId: ex.setId || null, image: ex.image ? dataUrlToBlob(ex.image) : null });
+    await addExample({ variety: normalizeName(ex.variety), varietyKey: key, fruitType, embedding: ex.embedding, createdAt: ex.createdAt || new Date().toISOString(), viewType: ex.viewType || 'weitere', setId: ex.setId || null, location: ex.location || null, image: ex.image ? dataUrlToBlob(ex.image) : null });
     if (!(await getVariety(key))) await putVariety({ key, fruitType, name: normalizeName(ex.variety), synonyms:'', origin:'', tastes:[], ripenessStart:null, ripenessEnd:null, ripenessNote:'', usage:'', storage:'', description:'', sources:[], referenceId:null, createdAt:new Date().toISOString(), updatedAt:new Date().toISOString() });
   }
   await updateCollection();
@@ -772,19 +838,33 @@ function setupInstall() {
   $('installBtn').addEventListener('click', async () => { if (!deferredInstallPrompt) return; deferredInstallPrompt.prompt(); await deferredInstallPrompt.userChoice; deferredInstallPrompt = null; $('installBtn').classList.add('hidden'); });
 }
 
-$('varietyName').addEventListener('input', () => { const ref = updateKnowledgeMatch(); if (ref) applyReferenceToForm(ref, false, true); });
-$('varietyName').addEventListener('blur', () => { const ref = currentReference(); if (ref) applyReferenceToForm(ref, false, true); });
-$('trainFruitType').addEventListener('change', () => { const ref = updateKnowledgeMatch(); if (ref) applyReferenceToForm(ref, false, true); });
-$('applyKnowledgeBtn').addEventListener('click', () => { const ref = currentReference(); if (ref) applyReferenceToForm(ref, true, false); });
+$('varietyName').addEventListener('input', () => { const ref = updateKnowledgeMatch(); if (ref) applyReferenceToForm(ref, false, true); syncKnownVarietyMenu(); });
+$('varietyName').addEventListener('blur', () => { const ref = currentReference(); if (ref) applyReferenceToForm(ref, false, true); syncKnownVarietyMenu(); });
+$('trainFruitType').addEventListener('change', () => { setupKnownVarietiesMenu(); const ref = updateKnowledgeMatch(); if (ref) applyReferenceToForm(ref, false, true); });
+$('knownVarietyMenu').addEventListener('change', () => {
+  const value = $('knownVarietyMenu').value;
+  if (!value) { $('varietyName').value = ''; updateKnowledgeMatch(); return; }
+  if (value === '__custom__') { $('varietyName').focus(); return; }
+  $('varietyName').value = value; const ref = currentReference(); if (ref) applyReferenceToForm(ref, true, false);
+});
+$('applyKnowledgeBtn').addEventListener('click', () => { const ref = currentReference(); if (ref) applyReferenceToForm(ref, true, false); syncKnownVarietyMenu(); });
 
-$('trainImages').addEventListener('change', async e => {
+async function addTrainFiles(e) {
   const added = await buildItems(e.target.files, true, trainItems.length, MAX_FILES - trainItems.length); trainItems.push(...added); e.target.value = ''; renderTrainGrid(); refreshActionButtons();
-});
-$('recognizeImages').addEventListener('change', async e => {
+}
+async function addRecognizeFiles(e) {
   const added = await buildItems(e.target.files, false, recognizeItems.length, MAX_FILES - recognizeItems.length); recognizeItems.push(...added); e.target.value = ''; renderRecognizeGrid(); refreshActionButtons();
-});
-$('clearTrainSelectionBtn').addEventListener('click', () => { trainItems = []; $('trainImages').value = ''; renderTrainGrid(); refreshActionButtons(); });
-$('clearRecognizeSelectionBtn').addEventListener('click', () => { recognizeItems = []; $('recognizeImages').value = ''; $('results').innerHTML = ''; renderRecognizeGrid(); refreshActionButtons(); });
+}
+$('trainCamera').addEventListener('change', addTrainFiles);
+$('trainGallery').addEventListener('change', addTrainFiles);
+$('recognizeCamera').addEventListener('change', addRecognizeFiles);
+$('recognizeGallery').addEventListener('change', addRecognizeFiles);
+$('clearTrainSelectionBtn').addEventListener('click', () => { trainItems = []; $('trainCamera').value = ''; $('trainGallery').value = ''; renderTrainGrid(); refreshActionButtons(); });
+$('clearRecognizeSelectionBtn').addEventListener('click', () => { recognizeItems = []; $('recognizeCamera').value = ''; $('recognizeGallery').value = ''; $('results').innerHTML = ''; renderRecognizeGrid(); refreshActionButtons(); });
+$('trainLocationBtn').addEventListener('click', () => requestLocation('train'));
+$('recognizeLocationBtn').addEventListener('click', () => requestLocation('recognize'));
+$('clearTrainLocationBtn').addEventListener('click', () => clearLocation('train'));
+$('clearRecognizeLocationBtn').addEventListener('click', () => clearLocation('recognize'));
 $('shareBtn').addEventListener('click', shareApp);
 $('saveVarietyBtn').addEventListener('click', () => saveVarietyMetadata(true, false).catch(err => { console.error(err); alert('Sortendaten konnten nicht gespeichert werden.'); }));
 $('addTrainingBtn').addEventListener('click', addTrainingExamples);
@@ -808,6 +888,9 @@ setupMonthSelect('ripenessEnd', true);
 setupMonthSelect('recognizeMonth', true);
 setupMonthSelect('searchMonth', true);
 setupKnownVarietiesDatalist();
+setupKnownVarietiesMenu();
+renderLocation('train');
+renderLocation('recognize');
 updateKnowledgeMatch();
 setupTabs();
 const initialTab = new URLSearchParams(location.search).get('bereich');

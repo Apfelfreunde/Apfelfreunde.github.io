@@ -2,7 +2,7 @@
   "id": "./",
   "name": "Apfelbuch – Apfel- & Birnensorten",
   "short_name": "Apfelbuch",
-  "description": "Apfel- und Birnensorten mit Fotos, Geschmack und Reifezeit sammeln, beschreiben und bestimmen.",
+  "description": "Apfel- und Birnensorten mit Kamera, Galerie, Geschmack, Reifezeit und optionalem Standort bestimmen.",
   "lang": "de-DE",
   "dir": "ltr",
   "start_url": "./",
@@ -18,8 +18,8 @@
     {"src":"icon-512.png","sizes":"512x512","type":"image/png","purpose":"any"}
   ],
   "shortcuts": [
-    {"name":"Sorte anlernen","short_name":"Anlernen","description":"Apfel- oder Birnensorte beschreiben und anlernen","url":"./?bereich=learn"},
-    {"name":"Frucht bestimmen","short_name":"Bestimmen","description":"Frucht mit Fotos, Geschmack und Reifezeit bestimmen","url":"./?bereich=recognize"},
+    {"name":"Sorte erkennen","short_name":"Erkennen","description":"Sorte mit Fotos, Geschmack, Reifezeit und optionalem Standort erkennen","url":"./?bereich=recognize"},
+    {"name":"Sorte anlernen","short_name":"Anlernen","description":"Apfel- oder Birnensorte mit Fotos anlernen","url":"./?bereich=learn"},
     {"name":"Sorten suchen","short_name":"Suchen","description":"Sorten nach Name, Geschmack und Reifezeit suchen","url":"./?bereich=search"},
     {"name":"Sammlung","short_name":"Sammlung","description":"Gespeicherte Sorten anzeigen","url":"./?bereich=collection"}
   ]
