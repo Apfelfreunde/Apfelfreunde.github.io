@@ -199,3 +199,8 @@ footer { text-align: center; color: var(--muted); padding: 20px 18px calc(20px +
 
 /* V12 – Kernbestimmung */
 .seed-guidance { margin: .75rem 0 1rem; padding: .85rem 1rem; border-radius: 12px; background: #f5f7ef; border: 1px solid #dce5d3; line-height: 1.45; }
+
+/* V14: Reifezeit wieder klar als sichtbare Auswahl zum Anhaken */
+.month-choice-grid .choice { cursor:pointer; min-height:44px; background:#fff; }
+.month-choice-grid .choice input { width:20px; height:20px; accent-color:var(--green); flex:0 0 auto; }
+.month-choice-grid .choice:has(input:checked) { border:2px solid var(--green); background:#edf5ee; color:var(--green-dark); font-weight:700; }
