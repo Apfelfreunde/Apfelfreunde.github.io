@@ -36,9 +36,14 @@ const TASTES = [
   ['juicy', 'saftig'],
   ['strong', 'kräftig']
 ];
-const MONTHS = [
+const PICK_MONTHS = [
   [7,'Juli'], [8,'August'], [9,'September'], [10,'Oktober'], [11,'November'], [12,'Dezember']
 ];
+const ENJOY_MONTHS = [
+  [1,'Januar'], [2,'Februar'], [3,'März'], [4,'April'], [5,'Mai'], [6,'Juni'],
+  [7,'Juli'], [8,'August'], [9,'September'], [10,'Oktober'], [11,'November'], [12,'Dezember']
+];
+const MONTHS = PICK_MONTHS;
 
 const RIPENESS_PHASES = [['','egal'],['early','Anfang'],['mid','Mitte'],['late','Ende']];
 const MORPHOLOGY_GROUPS = [
@@ -116,6 +121,7 @@ function referenceToMeta(ref) {
     synonyms: ref.synonyms || (ref.aliases || []).join('; '), origin: ref.origin || '',
     tastes: Array.isArray(ref.tastes) ? [...ref.tastes] : [],
     ripenessStart: ref.ripenessStart || null, ripenessEnd: ref.ripenessEnd || null, ripenessType: ref.ripenessType || '',
+    enjoymentStart: ref.enjoymentStart || null, enjoymentEnd: ref.enjoymentEnd || null,
     ripenessNote: ref.ripenessNote || '', usage: ref.usage || '', storage: ref.storage || '',
     description: ref.description || '', traits: ref.traits && typeof ref.traits === 'object' ? structuredClone(ref.traits) : {}, exampleImages: Array.isArray(ref.exampleImages) ? [...ref.exampleImages] : [], regions: Array.isArray(ref.regions) ? [...ref.regions] : [], categories: Array.isArray(ref.categories) ? [...ref.categories] : [], sources: combineSources(ref.sources),
     referenceId: ref.id, builtInKnowledge: true
@@ -135,6 +141,8 @@ function enrichMeta(meta) {
     ripenessStart: meta.ripenessStart || base.ripenessStart,
     ripenessEnd: meta.ripenessEnd || base.ripenessEnd,
     ripenessType: meta.ripenessType || base.ripenessType || '',
+    enjoymentStart: meta.enjoymentStart || base.enjoymentStart || null,
+    enjoymentEnd: meta.enjoymentEnd || base.enjoymentEnd || null,
     ripenessNote: meta.ripenessNote || base.ripenessNote,
     usage: meta.usage || base.usage, storage: meta.storage || base.storage,
     description: meta.description || base.description,
@@ -156,7 +164,7 @@ function makeVarietyKey(fruitType, name) { return `${fruitType || 'apple'}::${no
 function escapeHtml(str) { return String(str ?? '').replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c])); }
 function typeLabel(value) { return (VIEW_TYPES.find(x => x[0] === value) || [null, 'Weitere'])[1]; }
 function tasteLabel(value) { return (TASTES.find(x => x[0] === value) || [null, value])[1]; }
-function monthLabel(value) { return (MONTHS.find(x => x[0] === Number(value)) || [null, ''])[1]; }
+function monthLabel(value) { return (ENJOY_MONTHS.find(x => x[0] === Number(value)) || [null, ''])[1]; }
 function clamp(v, min=0, max=1) { return Math.min(max, Math.max(min, v)); }
 
 function openDb() {
@@ -342,12 +350,12 @@ function dataUrlToBlob(dataUrl) {
   return new Blob([bytes], { type: mime });
 }
 
-function setupMonthSelect(id, includeEmpty=true) {
+function setupMonthSelect(id, includeEmpty=true, months=MONTHS) {
   const select = $(id); select.innerHTML = '';
   if (includeEmpty) {
     const opt = document.createElement('option'); opt.value = ''; opt.textContent = 'Nicht angegeben'; select.appendChild(opt);
   }
-  for (const [value, label] of MONTHS) {
+  for (const [value, label] of months) {
     const opt = document.createElement('option'); opt.value = String(value); opt.textContent = label; select.appendChild(opt);
   }
 }
@@ -396,8 +404,8 @@ function syncRadioChoices(containerId, selectId) {
   box.querySelectorAll('input[type="radio"]').forEach(input => { input.checked = input.value === current; });
 }
 
-function renderMonthChoices(containerId, selectId, prefix) {
-  const opts = [['','weiß nicht'], ...MONTHS.map(([value,label]) => [String(value), label])];
+function renderMonthChoices(containerId, selectId, prefix, months=MONTHS) {
+  const opts = [['','weiß nicht'], ...months.map(([value,label]) => [String(value), label])];
   renderRadioChoices(containerId, selectId, opts, prefix);
 }
 
@@ -551,6 +559,10 @@ function applyReferenceToForm(ref=currentReference(), force=false, quiet=false) 
   if (force || !$('ripenessStart').value) $('ripenessStart').value = ref.ripenessStart ? String(ref.ripenessStart) : '';
   if (force || !$('ripenessEnd').value) $('ripenessEnd').value = ref.ripenessEnd ? String(ref.ripenessEnd) : '';
   syncRadioChoices('ripenessStartOptions', 'ripenessStart');
+  if (force || !$('enjoymentStart').value) $('enjoymentStart').value = ref.enjoymentStart ? String(ref.enjoymentStart) : '';
+  if (force || !$('enjoymentEnd').value) $('enjoymentEnd').value = ref.enjoymentEnd ? String(ref.enjoymentEnd) : '';
+  syncRadioChoices('enjoymentStartOptions', 'enjoymentStart');
+  syncRadioChoices('enjoymentEndOptions', 'enjoymentEnd');
   syncRadioChoices('ripenessEndOptions', 'ripenessEnd');
   setupKnownVarietiesMenu();
   syncKnownVarietyMenu();
@@ -715,6 +727,8 @@ function readTrainMetadata() {
     synonyms: $('synonyms').value.trim(), origin: $('origin').value.trim(),
     tastes: selectedTastes('trainTasteOptions'),
     ripenessStart: Number($('ripenessStart').value) || null,
+    enjoymentStart: Number($('enjoymentStart').value) || null,
+    enjoymentEnd: Number($('enjoymentEnd').value) || null,
     ripenessEnd: Number($('ripenessEnd').value) || null,
     ripenessNote: $('ripenessNote').value.trim(),
     usage: $('usage').value.trim(), storage: $('storage').value.trim(),
@@ -741,6 +755,8 @@ async function saveVarietyMetadata(showMessage=true, preserveBlank=false) {
       origin: input.origin || existing.origin || '',
       tastes: input.tastes.length ? input.tastes : (existing.tastes || []),
       ripenessStart: input.ripenessStart || existing.ripenessStart || null,
+      enjoymentStart: input.enjoymentStart || existing.enjoymentStart || null,
+      enjoymentEnd: input.enjoymentEnd || existing.enjoymentEnd || null,
       ripenessEnd: input.ripenessEnd || existing.ripenessEnd || null,
       ripenessNote: input.ripenessNote || existing.ripenessNote || '',
       usage: input.usage || existing.usage || '', storage: input.storage || existing.storage || '',
@@ -865,6 +881,7 @@ function renderMetaHtml(meta, imageUrl='') {
         ${(meta.categories || []).length ? `<p><strong>Einordnung:</strong> ${escapeHtml((meta.categories || []).join(' · '))}</p>` : ''}
         <p><strong>Geschmack:</strong> ${tastes.length ? tastes.map(x => `<span class="badge">${escapeHtml(x)}</span>`).join('') : 'nicht angegeben'}</p>
         <p><strong>Reifezeit:</strong> ${escapeHtml(ripeness)}${reifegruppe ? `<br><span class="meta-note">KOB-Reifegruppe: ${escapeHtml(reifegruppe.label)}</span>` : ''}${meta.ripenessNote ? `<br><span class="meta-note">${escapeHtml(meta.ripenessNote)}</span>` : ''}</p>
+        ${meta.enjoymentStart && meta.enjoymentEnd ? `<p><strong>Genussreife:</strong> ${escapeHtml(monthLabel(meta.enjoymentStart))} bis ${escapeHtml(monthLabel(meta.enjoymentEnd))}</p>` : ''}
         ${meta.storage ? `<p><strong>Lagerfähigkeit:</strong> ${escapeHtml(meta.storage)}</p>` : ''}
         ${traitRows ? `<h4>Bestimmungsmerkmale</h4><div class="traits-table">${traitRows}</div>` : '<p class="source-note">Pomologische Detailmerkmale sind für diese Sorte noch nicht vollständig strukturiert hinterlegt.</p>'}
         ${desc ? `<p><strong>Beschreibung:</strong> ${escapeHtml(desc)}</p>` : '<p class="empty">Noch keine ausführliche Beschreibung hinterlegt.</p>'}
@@ -966,6 +983,8 @@ async function searchVarieties() {
   const text = normalizeLookup($('searchText').value);
   const fruit = $('searchFruitType').value;
   const month = Number($('searchMonth').value) || null;
+  const enjoymentMonth = Number($('searchEnjoymentMonth').value) || null;
+  const storageQuery = normalizeLookup($('searchStorage').value);
   const tastes = selectedTastes('searchTasteOptions');
   const morph = selectedMorphology('searchMorphologyOptions');
   const examples = await getAllExamples();
@@ -981,11 +1000,15 @@ async function searchVarieties() {
     const textScore = text ? (textMatches ? (normalizeLookup(v.name).includes(text) ? 1 : 0.75) : 0) : null;
     const tScore = tasteMatch(tastes, v.tastes || []);
     const rScore = ripenessMatch(month, v);
+    const eScore = enjoymentMonth ? ripenessMatch(enjoymentMonth, {ripenessStart:v.enjoymentStart, ripenessEnd:v.enjoymentEnd}) : null;
+    const storageScore = storageQuery ? (normalizeLookup(v.storage || '').includes(storageQuery) ? 1 : 0) : null;
     const mScore = morphologyMatch(morph, v.traits || {});
     let total = 0, weight = 0;
     if (textScore !== null) { total += textScore * 0.30; weight += 0.30; }
     if (tScore !== null) { total += tScore * 0.30; weight += 0.30; }
     if (rScore !== null) { total += rScore * 0.15; weight += 0.15; }
+    if (eScore !== null) { total += eScore * 0.15; weight += 0.15; }
+    if (storageScore !== null) { total += storageScore * 0.10; weight += 0.10; }
     if (mScore !== null) { total += mScore * 0.20; weight += 0.20; }
     if (!weight) { total = 1; weight = 1; }
     return { v, score: total / weight, photo: photoByKey.get(v.key) || null };
@@ -1000,7 +1023,7 @@ async function searchVarieties() {
     const pct = Math.round(x.score * 100);
     const knowledgeBadge = x.v.builtInKnowledge ? '<span class="badge knowledge-badge">Fachwissen</span>' : '';
     const imageUrl = x.photo ? URL.createObjectURL(x.photo) : '';
-    return `<div class="result-card"><div class="result-head"><h3>${escapeHtml(x.v.name)} <small>(${escapeHtml(fruitLabel(x.v.fruitType))})</small> ${knowledgeBadge}</h3>${(text || tastes.length || month || Object.keys(morph).length) ? `<span class="probability">${pct} % passend</span>` : ''}</div>${renderMetaHtml(x.v, imageUrl)}</div>`;
+    return `<div class="result-card"><div class="result-head"><h3>${escapeHtml(x.v.name)} <small>(${escapeHtml(fruitLabel(x.v.fruitType))})</small> ${knowledgeBadge}</h3>${(text || tastes.length || month || enjoymentMonth || storageQuery || Object.keys(morph).length) ? `<span class="probability">${pct} % passend</span>` : ''}</div>${renderMetaHtml(x.v, imageUrl)}</div>`;
   }).join('');
 }
 
@@ -1208,11 +1231,17 @@ renderTasteChoices('searchTasteOptions', 'search');
 setupMonthSelect('ripenessStart', true);
 setupMonthSelect('ripenessEnd', true);
 setupMonthSelect('recognizeMonth', true);
-setupMonthSelect('searchMonth', true);
+setupMonthSelect('searchMonth', true, PICK_MONTHS);
+setupMonthSelect('enjoymentStart', true, ENJOY_MONTHS);
+setupMonthSelect('enjoymentEnd', true, ENJOY_MONTHS);
+setupMonthSelect('searchEnjoymentMonth', true, ENJOY_MONTHS);
 renderMonthChoices('ripenessStartOptions', 'ripenessStart', 'ripeness-start');
 renderMonthChoices('ripenessEndOptions', 'ripenessEnd', 'ripeness-end');
 renderMonthChoices('recognizeRipenessOptions', 'recognizeMonth', 'recognize-ripeness');
-renderMonthChoices('searchRipenessOptions', 'searchMonth', 'search-ripeness');
+renderMonthChoices('searchRipenessOptions', 'searchMonth', 'search-ripeness', PICK_MONTHS);
+renderMonthChoices('enjoymentStartOptions', 'enjoymentStart', 'enjoyment-start', ENJOY_MONTHS);
+renderMonthChoices('enjoymentEndOptions', 'enjoymentEnd', 'enjoyment-end', ENJOY_MONTHS);
+renderMonthChoices('searchEnjoymentOptions', 'searchEnjoymentMonth', 'search-enjoyment', ENJOY_MONTHS);
 renderRadioChoices('recognizeRipenessPhaseOptions', 'recognizeRipenessPhase', RIPENESS_PHASES, 'recognize-phase');
 renderMorphologyOptions('recognizeMorphologyOptions');
 renderMorphologyOptions('searchMorphologyOptions');

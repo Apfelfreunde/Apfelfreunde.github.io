@@ -61,8 +61,8 @@
       </div>
 
       <div class="step-card">
-        <div class="step-title"><span>3</span><strong>Reifezeit</strong></div>
-        <p class="hint compact">Die Reifezeit beginnt bei der Bestimmung ab Juli. Einfach den passenden Monat antippen.</p>
+        <div class="step-title"><span>3</span><strong>Pflückreife</strong></div>
+        <p class="hint compact">Die Pflückreife beginnt frühestens im Juli. Vor Juli wird hier bewusst nichts angeboten.</p>
         <div id="recognizeRipenessOptions" class="choice-grid month-choice-grid"></div>
         <div class="sub-choice-label">Zeitraum im Monat</div>
         <div id="recognizeRipenessPhaseOptions" class="choice-grid phase-choice-grid"></div>
@@ -152,14 +152,18 @@
       </div>
 
       <div class="step-card">
-        <div class="step-title"><span>3</span><strong>Reifezeit</strong></div>
-        <p class="hint compact">Die Reifezeit beginnt ab Juli. Bei nur einem Monat wählst du bei „von“ und „bis“ denselben Monat.</p>
+        <div class="step-title"><span>3</span><strong>Pflückreife</strong></div>
+        <p class="hint compact">Die Pflückreife beginnt frühestens im Juli. Bei nur einem Monat wählst du bei „von“ und „bis“ denselben Monat.</p>
         <label>Reifezeit von</label>
         <div id="ripenessStartOptions" class="choice-grid month-choice-grid"></div>
         <select id="ripenessStart" class="hidden-select" aria-hidden="true" tabindex="-1"></select>
         <label>Reifezeit bis</label>
         <div id="ripenessEndOptions" class="choice-grid month-choice-grid"></div>
         <select id="ripenessEnd" class="hidden-select" aria-hidden="true" tabindex="-1"></select>
+        <div class="sub-choice-label">Genussreife (optional)</div>
+        <p class="hint compact">Wann schmeckt die Sorte nach der Ernte am besten? Bei Lageräpfeln kann das deutlich später sein.</p>
+        <label>Genussreife von</label><div id="enjoymentStartOptions" class="choice-grid month-choice-grid"></div><select id="enjoymentStart" class="hidden-select" aria-hidden="true" tabindex="-1"></select>
+        <label>Genussreife bis</label><div id="enjoymentEndOptions" class="choice-grid month-choice-grid"></div><select id="enjoymentEnd" class="hidden-select" aria-hidden="true" tabindex="-1"></select>
       </div>
 
       <div class="step-card optional-card">
@@ -227,7 +231,7 @@
 
     <section id="search" class="panel">
       <h2>Sorten suchen</h2>
-      <p>Durchsuche deine Sammlung und das Fachwissen nach <strong>Name, Geschmack, Reifezeit und sichtbaren Fruchtmerkmalen</strong>.</p>
+      <p>Durchsuche deine Sammlung und das Fachwissen nach <strong>Name, Geschmack, Pflückreife, Genussreife, Lagerfähigkeit und sichtbaren Fruchtmerkmalen</strong>.</p>
       <label for="searchText">Name, Synonym, Region oder Stichwort</label>
       <input id="searchText" type="text" placeholder="z. B. Boskoop, Hessen, Mostbirne …" />
       <div class="form-grid two">
@@ -235,8 +239,10 @@
           <label for="searchFruitType">Fruchtart</label>
           <select id="searchFruitType"><option value="all">Alle</option><option value="apple">Apfel</option><option value="pear">Birne</option></select>
         </div>
-        <div><label>Reifezeit</label><div id="searchRipenessOptions" class="choice-grid month-choice-grid compact-grid"></div><select id="searchMonth" class="hidden-select" aria-hidden="true" tabindex="-1"></select></div>
+        <div><label>Pflückreife (ab Juli)</label><div id="searchRipenessOptions" class="choice-grid month-choice-grid compact-grid"></div><select id="searchMonth" class="hidden-select" aria-hidden="true" tabindex="-1"></select></div>
+        <div><label>Genussreife</label><div id="searchEnjoymentOptions" class="choice-grid month-choice-grid compact-grid"></div><select id="searchEnjoymentMonth" class="hidden-select" aria-hidden="true" tabindex="-1"></select></div>
       </div>
+      <label for="searchStorage">Lagerfähigkeit (optional)</label><input id="searchStorage" type="text" placeholder="z. B. Februar, lange lagerfähig" />
       <fieldset class="taste-fieldset"><legend>Geschmack</legend><div id="searchTasteOptions" class="choice-grid"></div></fieldset>
       <details class="feature-details"><summary><strong>Weitere Merkmale eingrenzen</strong></summary><div class="advanced-content"><p class="hint compact">Hier findest du jetzt auch Schale, Bereifung, Berostung, Lentizellen, Duft, Kerngehäuse und Kerne. Mit ⓘ wird jedes Merkmal kurz erklärt.</p><div id="searchMorphologyOptions" class="morphology-filter-grid"></div></div></details>
       <button id="searchBtn" class="primary" type="button">Passende Sorten anzeigen</button>
