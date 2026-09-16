@@ -1,7 +1,8 @@
 const DB_NAME = 'apfelbuch-db';
-const DB_VERSION = 2;
+const DB_VERSION = 3;
 const EXAMPLE_STORE = 'examples';
 const VARIETY_STORE = 'varieties';
+const FINDING_STORE = 'treeFindings';
 const MAX_FILES = 15;
 
 let model = null;
@@ -37,6 +38,37 @@ const MONTHS = [
   [1,'Januar'], [2,'Februar'], [3,'März'], [4,'April'], [5,'Mai'], [6,'Juni'],
   [7,'Juli'], [8,'August'], [9,'September'], [10,'Oktober'], [11,'November'], [12,'Dezember']
 ];
+
+const RIPENESS_PHASES = [['','egal'],['early','Anfang'],['mid','Mitte'],['late','Ende']];
+const MORPHOLOGY_GROUPS = [
+  ['form','Form',[['round','rund'],['flat_round','flachrund'],['high','hochgebaut'],['conical','kegelförmig'],['bell','glockenförmig'],['irregular','unregelmäßig']]],
+  ['stemPit','Stielgrube',[['shallow','flach'],['medium','mitteltief'],['deep','tief'],['narrow','eng'],['wide','weit'],['russeted','berostet']]],
+  ['calyxPit','Kelchgrube',[['shallow','flach'],['medium','mitteltief'],['deep','tief'],['narrow','eng'],['wide','weit'],['ribbed','gerippt/gefaltet']]],
+  ['calyx','Kelch',[['open','offen'],['half_open','halb offen'],['closed','geschlossen']]],
+  ['color','Farbe',[['green','grün'],['yellow','gelb'],['red','rot'],['striped','gestreift'],['flamed','geflammt'],['brownish','bräunlich']]],
+  ['skin','Schale',[['smooth','glatt'],['rough','rau'],['thin','dünn'],['thick','dick'],['greasy','fettig'],['dry','trocken']]],
+  ['bloom','Bereifung',[['none','keine'],['light','leicht'],['strong','stark/bläulich']]],
+  ['russeting','Berostung',[['none','keine'],['dots','punktuell'],['net','netzartig'],['strong','stark/flächig'],['stem_only','vor allem Stielgrube']]],
+  ['lenticels','Lentizellen',[['few','wenige'],['many','zahlreich'],['small','klein/fein'],['large','groß'],['light','hell'],['dark','dunkel'],['distinct','auffällig']]],
+  ['aroma','Duft / Geruch',[['none','kaum Duft'],['weak','schwach'],['medium','mittel'],['strong','stark'],['spicy','würzig'],['sweet','süßlich/fruchtig']]],
+  ['core','Kerngehäuse',[['small','klein'],['medium','mittel'],['large','groß'],['open','offen'],['closed','geschlossen'],['narrow','enge Kernfächer']]],
+  ['seeds','Kerne',[['small','klein'],['medium','mittel'],['large','groß'],['elongated','länglich'],['rounded','rundlich'],['dark','dunkelbraun'],['well_formed','gut ausgebildet']]]
+];
+
+const MORPHOLOGY_INFO = {
+  form: 'Die äußere Gestalt der Frucht, z. B. rund, flachrund, hochgebaut oder kegelförmig.',
+  stemPit: 'Die Vertiefung rund um den Stiel. Tiefe, Breite und Berostung können sortentypisch sein.',
+  calyxPit: 'Die Vertiefung an der Unterseite rund um den Kelch. Sie kann flach, tief, eng, weit oder gerippt sein.',
+  calyx: 'Die vertrockneten Blütenreste an der Unterseite. Der Kelch kann offen, halb offen oder geschlossen sein.',
+  color: 'Grundfarbe und Deckfarbe der Schale sowie Muster wie Streifen oder Flammen.',
+  skin: 'Beschaffenheit der Schale, z. B. glatt, rau, dünn, dick, fettig oder trocken.',
+  bloom: 'Ein feiner matter bis bläulicher Belag auf der Schale, der sich teilweise abreiben lässt.',
+  russeting: 'Raue, korkige, meist braune Schalenbereiche. Sie können punktuell, netzartig oder flächig auftreten.',
+  lenticels: 'Kleine Punkte bzw. Poren auf der Schale. Größe, Farbe, Anzahl und Auffälligkeit können bei der Bestimmung helfen.',
+  aroma: 'Der wahrnehmbare Geruch der reifen Frucht, z. B. schwach, stark, würzig oder süßlich-fruchtig.',
+  core: 'Der innere Bereich mit den Kernfächern. Größe, Offenheit und Form können sortentypisch sein.',
+  seeds: 'Die Samen im Kerngehäuse. Größe, Form, Farbe und Ausbildung können ein Bestimmungsmerkmal sein.'
+};
 
 const REFERENCE_VARIETIES = Array.isArray(window.SORTENWISSEN) ? window.SORTENWISSEN : [];
 
@@ -80,9 +112,9 @@ function referenceToMeta(ref) {
     key: makeVarietyKey(ref.fruitType, ref.name), fruitType: ref.fruitType, name: ref.name,
     synonyms: ref.synonyms || (ref.aliases || []).join('; '), origin: ref.origin || '',
     tastes: Array.isArray(ref.tastes) ? [...ref.tastes] : [],
-    ripenessStart: ref.ripenessStart || null, ripenessEnd: ref.ripenessEnd || null,
+    ripenessStart: ref.ripenessStart || null, ripenessEnd: ref.ripenessEnd || null, ripenessType: ref.ripenessType || '',
     ripenessNote: ref.ripenessNote || '', usage: ref.usage || '', storage: ref.storage || '',
-    description: ref.description || '', regions: Array.isArray(ref.regions) ? [...ref.regions] : [], categories: Array.isArray(ref.categories) ? [...ref.categories] : [], sources: combineSources(ref.sources),
+    description: ref.description || '', traits: ref.traits && typeof ref.traits === 'object' ? structuredClone(ref.traits) : {}, exampleImages: Array.isArray(ref.exampleImages) ? [...ref.exampleImages] : [], regions: Array.isArray(ref.regions) ? [...ref.regions] : [], categories: Array.isArray(ref.categories) ? [...ref.categories] : [], sources: combineSources(ref.sources),
     referenceId: ref.id, builtInKnowledge: true
   };
 }
@@ -99,9 +131,12 @@ function enrichMeta(meta) {
     tastes: Array.isArray(meta.tastes) && meta.tastes.length ? meta.tastes : base.tastes,
     ripenessStart: meta.ripenessStart || base.ripenessStart,
     ripenessEnd: meta.ripenessEnd || base.ripenessEnd,
+    ripenessType: meta.ripenessType || base.ripenessType || '',
     ripenessNote: meta.ripenessNote || base.ripenessNote,
     usage: meta.usage || base.usage, storage: meta.storage || base.storage,
     description: meta.description || base.description,
+    traits: meta.traits && Object.keys(meta.traits).length ? meta.traits : base.traits,
+    exampleImages: Array.isArray(meta.exampleImages) && meta.exampleImages.length ? meta.exampleImages : base.exampleImages,
     regions: Array.isArray(meta.regions) && meta.regions.length ? meta.regions : base.regions,
     categories: Array.isArray(meta.categories) && meta.categories.length ? meta.categories : base.categories,
     sources: combineSources(meta.sources, base.sources), referenceId: ref.id, builtInKnowledge: true
@@ -133,11 +168,27 @@ function openDb() {
       if (!db.objectStoreNames.contains(VARIETY_STORE)) {
         db.createObjectStore(VARIETY_STORE, { keyPath: 'key' });
       }
+      if (!db.objectStoreNames.contains(FINDING_STORE)) {
+        db.createObjectStore(FINDING_STORE, { keyPath: 'id', autoIncrement: true });
+      }
     };
     req.onsuccess = () => resolve(req.result);
     req.onerror = () => reject(req.error);
   });
 }
+
+function ripenessGroupFor(meta) {
+  const explicit = String(meta?.ripenessType || meta?.ripenessGroup || '').toLowerCase();
+  if (explicit.includes('früh') || explicit.includes('sommer')) return {key:'summer', label:'Sommersorte / frühe Reife'};
+  if (explicit.includes('mittel') || explicit.includes('herbst')) return {key:'autumn', label:'Herbstsorte / mittlere Reife'};
+  if (explicit.includes('spät') || explicit.includes('winter')) return {key:'winter', label:'Wintersorte / späte Reife'};
+  const start = Number(meta?.ripenessStart || 0);
+  if (!start) return null;
+  if (start <= 8) return {key:'summer', label:'Sommersorte / frühe Reife (abgeleitet)'};
+  if (start === 9) return {key:'autumn', label:'Herbstsorte / mittlere Reife (abgeleitet)'};
+  return {key:'winter', label:'Wintersorte / späte Reife (abgeleitet)'};
+}
+
 
 async function addExample(record) {
   const db = await openDb();
@@ -189,12 +240,38 @@ async function putVariety(record) {
   }).finally(() => db.close());
 }
 
+
+async function addTreeFinding(record) {
+  const db = await openDb();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(FINDING_STORE, 'readwrite');
+    tx.objectStore(FINDING_STORE).add(record);
+    tx.oncomplete = resolve; tx.onerror = () => reject(tx.error);
+  }).finally(() => db.close());
+}
+
+async function getAllTreeFindings() {
+  const db = await openDb();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(FINDING_STORE, 'readonly');
+    const req = tx.objectStore(FINDING_STORE).getAll();
+    req.onsuccess = () => resolve(req.result || []); req.onerror = () => reject(req.error);
+  }).finally(() => db.close());
+}
+
+function anonymizedLocation(loc) {
+  if (!loc) return null;
+  const round = v => Number.isFinite(v) ? Math.round(v * 1000) / 1000 : null;
+  return { label: String(loc.label || '').trim(), latitude: round(loc.latitude), longitude: round(loc.longitude), anonymized: true };
+}
+
 async function clearAllData() {
   const db = await openDb();
   return new Promise((resolve, reject) => {
-    const tx = db.transaction([EXAMPLE_STORE, VARIETY_STORE], 'readwrite');
+    const tx = db.transaction([EXAMPLE_STORE, VARIETY_STORE, FINDING_STORE], 'readwrite');
     tx.objectStore(EXAMPLE_STORE).clear();
     tx.objectStore(VARIETY_STORE).clear();
+    tx.objectStore(FINDING_STORE).clear();
     tx.oncomplete = resolve;
     tx.onerror = () => reject(tx.error);
   }).finally(() => db.close());
@@ -321,6 +398,60 @@ function renderMonthChoices(containerId, selectId, prefix) {
   renderRadioChoices(containerId, selectId, opts, prefix);
 }
 
+
+function renderMorphologyOptions(containerId, initial={}) {
+  const root = $(containerId); if (!root) return;
+  root.innerHTML = '';
+  for (const [key, title, options] of MORPHOLOGY_GROUPS) {
+    const group = document.createElement('div'); group.className = 'morph-group'; group.dataset.key = key;
+    const h = document.createElement('div'); h.className = 'morph-title';
+    const titleSpan = document.createElement('span'); titleSpan.textContent = title;
+    const info = document.createElement('button'); info.type='button'; info.className='morph-info'; info.textContent='ⓘ';
+    info.title = MORPHOLOGY_INFO[key] || '';
+    info.setAttribute('aria-label', `${title} erklären`);
+    info.addEventListener('click', () => alert(`${title}\n\n${MORPHOLOGY_INFO[key] || 'Pomologisches Bestimmungsmerkmal.'}`));
+    h.append(titleSpan, info);
+    const opts = document.createElement('div'); opts.className = 'morph-options';
+    const values = new Set(Array.isArray(initial?.[key]) ? initial[key] : []);
+    for (const [value,label] of options) {
+      const b = document.createElement('button'); b.type='button'; b.className='morph-chip'; b.dataset.value=value; b.textContent=label;
+      if (values.has(value)) b.classList.add('active');
+      b.addEventListener('click', () => b.classList.toggle('active'));
+      opts.appendChild(b);
+    }
+    group.append(h,opts); root.appendChild(group);
+  }
+}
+
+function selectedMorphology(containerId) {
+  const root = $(containerId); const out = {}; if (!root) return out;
+  root.querySelectorAll('.morph-group').forEach(group => {
+    const vals=[...group.querySelectorAll('.morph-chip.active')].map(b=>b.dataset.value);
+    if (vals.length) out[group.dataset.key]=vals;
+  });
+  return out;
+}
+
+function setMorphology(containerId, traits={}) { renderMorphologyOptions(containerId, traits || {}); }
+
+function morphologyMatch(selected, traits) {
+  const groups = Object.entries(selected || {}); if (!groups.length) return null;
+  let total=0, count=0;
+  for (const [key, wanted] of groups) {
+    if (!wanted?.length) continue; count++;
+    const known = Array.isArray(traits?.[key]) ? traits[key] : [];
+    if (!known.length) { total += 0.5; continue; }
+    const hits=wanted.filter(v=>known.includes(v)).length;
+    total += hits ? Math.min(1, hits / Math.max(1,wanted.length)) : 0;
+  }
+  return count ? total/count : null;
+}
+
+function traitLabel(groupKey, value) {
+  const g=MORPHOLOGY_GROUPS.find(x=>x[0]===groupKey); return g?.[2].find(x=>x[0]===value)?.[1] || value;
+}
+function traitGroupLabel(groupKey) { return MORPHOLOGY_GROUPS.find(x=>x[0]===groupKey)?.[1] || groupKey; }
+
 function setupKnownVarietiesDatalist() {
   const list = $('knownVarieties');
   if (!list) return;
@@ -359,6 +490,15 @@ function syncKnownVarietyMenu() {
   if (ref && ref.fruitType === $('trainFruitType').value) menu.value = ref.name;
   else if (normalizeName($('varietyName').value)) menu.value = '__custom__';
   else menu.value = '';
+}
+
+function renderVarietySuggestions() {
+  const box=$('varietySuggestions'); if (!box) return;
+  const q=normalizeLookup($('varietyName')?.value || ''); const fruit=$('trainFruitType')?.value || 'apple';
+  if (!q) { box.innerHTML=''; return; }
+  const hits=REFERENCE_VARIETIES.filter(r=>r.fruitType===fruit && referenceNames(r).some(n=>normalizeLookup(n).includes(q))).slice(0,6);
+  box.innerHTML=hits.map(r=>`<button type="button" class="suggestion-btn" data-name="${escapeHtml(r.name)}"><strong>${escapeHtml(r.name)}</strong>${r.synonyms?`<br><span class="hint">${escapeHtml(r.synonyms)}</span>`:''}</button>`).join('');
+  box.querySelectorAll('.suggestion-btn').forEach(b=>b.addEventListener('click',()=>{ $('varietyName').value=b.dataset.name; const ref=currentReference(); if(ref) applyReferenceToForm(ref,true,false); box.innerHTML=''; }));
 }
 
 function currentReference() {
@@ -412,6 +552,7 @@ function applyReferenceToForm(ref=currentReference(), force=false, quiet=false) 
   setupKnownVarietiesMenu();
   syncKnownVarietyMenu();
   updateKnowledgeMatch(quiet ? 'Angaben ergänzt' : 'Fachwissen übernommen');
+  setMorphology('trainMorphologyOptions', ref.traits || {});
   renderKnowledgeSources(ref.sources || []);
   return true;
 }
@@ -574,6 +715,7 @@ function readTrainMetadata() {
     ripenessNote: $('ripenessNote').value.trim(),
     usage: $('usage').value.trim(), storage: $('storage').value.trim(),
     description: $('description').value.trim(),
+    traits: selectedMorphology('trainMorphologyOptions'),
     referenceId: ref?.id || null,
     sources: combineSources(ref?.sources)
   };
@@ -599,6 +741,7 @@ async function saveVarietyMetadata(showMessage=true, preserveBlank=false) {
       ripenessNote: input.ripenessNote || existing.ripenessNote || '',
       usage: input.usage || existing.usage || '', storage: input.storage || existing.storage || '',
       description: input.description || existing.description || '',
+      traits: Object.keys(input.traits || {}).length ? input.traits : (existing.traits || {}),
       referenceId: input.referenceId || existing.referenceId || null,
       sources: combineSources(input.sources, existing.sources),
       updatedAt: now
@@ -683,33 +826,46 @@ function ripenessMatch(month, meta) {
   return 0;
 }
 
-function renderMetaHtml(meta) {
+function renderMetaHtml(meta, imageUrl='') {
   meta = enrichMeta(meta || {});
   const tastes = (meta.tastes || []).map(tasteLabel);
   const ripeness = meta.ripenessStart && meta.ripenessEnd ? `${monthLabel(meta.ripenessStart)} bis ${monthLabel(meta.ripenessEnd)}` : 'nicht angegeben';
   const sourceLinks = combineSources(meta.sources).map(src => ({...src, safeUrl: safeExternalUrl(src.url)})).filter(src => src.safeUrl);
   const desc = String(meta.description || '').trim();
-  const shortDesc = desc.length > 190 ? `${desc.slice(0, 187).trim()}…` : desc;
+  const shortDesc = desc.length > 220 ? `${desc.slice(0, 217).trim()}…` : desc;
+  const traits = meta.traits && typeof meta.traits === 'object' ? meta.traits : {};
+  const traitRows = Object.entries(traits).filter(([,vals]) => Array.isArray(vals) && vals.length).map(([key, vals]) => `<strong>${escapeHtml(traitGroupLabel(key))}</strong><span>${escapeHtml(vals.map(v=>traitLabel(key,v)).join(' · '))}</span>`).join('');
+  const externalImages = (Array.isArray(meta.exampleImages) ? meta.exampleImages : []).map(item => {
+    if (typeof item === 'string') return {url:safeExternalUrl(item), label:'Online-Abbildung', sourceUrl:''};
+    return {url:safeExternalUrl(item?.url), label:item?.label || 'Online-Abbildung', sourceUrl:safeExternalUrl(item?.sourceUrl || '')};
+  }).filter(x => x.url);
+  const heroUrl = imageUrl || externalImages[0]?.url || '';
+  const hero = heroUrl ? `<img class="variety-image" src="${escapeHtml(heroUrl)}" alt="Beispiel ${escapeHtml(meta.name || '')}" loading="lazy" referrerpolicy="no-referrer">` : `<div class="variety-image variety-image-placeholder">${meta.fruitType==='pear'?'🍐':'🍎'}</div>`;
+  const heroCredit = !imageUrl && externalImages[0] ? `<div class="image-credit">${externalImages[0].sourceUrl ? `<a href="${escapeHtml(externalImages[0].sourceUrl)}" target="_blank" rel="noopener noreferrer">` : ''}${escapeHtml(externalImages[0].label)}${externalImages[0].sourceUrl ? '</a>' : ''}</div>` : '';
+  const reifegruppe = ripenessGroupFor(meta);
   return `
     <div class="description-box">
-      <div class="quick-facts">
+      <div class="variety-hero"><div>${hero}${heroCredit}</div><div><div class="quick-facts">
         <div class="quick-fact"><strong>Geschmack</strong>${tastes.length ? escapeHtml(tastes.join(' · ')) : 'nicht angegeben'}</div>
-        <div class="quick-fact"><strong>Reifezeit</strong>${escapeHtml(ripeness)}</div>
+        <div class="quick-fact"><strong>Reifezeit</strong>${escapeHtml(ripeness)}${reifegruppe ? `<br><span class="meta-note">${escapeHtml(reifegruppe.label)}</span>` : ''}</div>
         ${meta.usage ? `<div class="quick-fact"><strong>Verwendung</strong>${escapeHtml(meta.usage)}</div>` : ''}
         ${meta.origin ? `<div class="quick-fact"><strong>Herkunft</strong>${escapeHtml(meta.origin)}</div>` : ''}
-      </div>
+      </div></div></div>
       ${shortDesc ? `<p class="variety-summary">${escapeHtml(shortDesc)}</p>` : ''}
+      ${sourceLinks.length ? `<div class="example-links">${sourceLinks.slice(0,3).map(src => `<a class="secondary-link" href="${escapeHtml(src.safeUrl)}" target="_blank" rel="noopener noreferrer">Beispielbilder / Quelle: ${escapeHtml(src.label)}</a>`).join('')}</div>` : ''}
       <details class="variety-details">
-        <summary>Ausführliche Sortenbeschreibung</summary>
+        <summary>Ausführliche, kompakte Sortenbeschreibung</summary>
         <p><strong>Fruchtart:</strong> ${escapeHtml(fruitLabel(meta.fruitType))}</p>
         ${meta.synonyms ? `<p><strong>Synonyme:</strong> ${escapeHtml(meta.synonyms)}</p>` : ''}
         ${(meta.regions || []).length ? `<p><strong>Region:</strong> ${escapeHtml((meta.regions || []).join(' · '))}</p>` : ''}
         ${(meta.categories || []).length ? `<p><strong>Einordnung:</strong> ${escapeHtml((meta.categories || []).join(' · '))}</p>` : ''}
         <p><strong>Geschmack:</strong> ${tastes.length ? tastes.map(x => `<span class="badge">${escapeHtml(x)}</span>`).join('') : 'nicht angegeben'}</p>
-        <p><strong>Reifezeit:</strong> ${escapeHtml(ripeness)}${meta.ripenessNote ? `<br><span class="meta-note">${escapeHtml(meta.ripenessNote)}</span>` : ''}</p>
+        <p><strong>Reifezeit:</strong> ${escapeHtml(ripeness)}${reifegruppe ? `<br><span class="meta-note">KOB-Reifegruppe: ${escapeHtml(reifegruppe.label)}</span>` : ''}${meta.ripenessNote ? `<br><span class="meta-note">${escapeHtml(meta.ripenessNote)}</span>` : ''}</p>
         ${meta.storage ? `<p><strong>Lagerfähigkeit:</strong> ${escapeHtml(meta.storage)}</p>` : ''}
+        ${traitRows ? `<h4>Bestimmungsmerkmale</h4><div class="traits-table">${traitRows}</div>` : '<p class="source-note">Pomologische Detailmerkmale sind für diese Sorte noch nicht vollständig strukturiert hinterlegt.</p>'}
         ${desc ? `<p><strong>Beschreibung:</strong> ${escapeHtml(desc)}</p>` : '<p class="empty">Noch keine ausführliche Beschreibung hinterlegt.</p>'}
-        ${sourceLinks.length ? `<p class="source-line"><strong>Quellen:</strong> ${sourceLinks.map(src => `<a href="${escapeHtml(src.safeUrl)}" target="_blank" rel="noopener noreferrer">${escapeHtml(src.label)}</a>`).join(' · ')}</p>` : ''}
+        ${sourceLinks.length ? `<p class="source-line"><strong>Fachquellen:</strong> ${sourceLinks.map(src => `<a href="${escapeHtml(src.safeUrl)}" target="_blank" rel="noopener noreferrer">${escapeHtml(src.label)}</a>`).join(' · ')}</p>` : ''}
+        <p class="source-line"><strong>Bestimmungshilfe:</strong> <a href="https://www.bund-lemgo.de/Obstsortenbestimmung.html" target="_blank" rel="noopener noreferrer">BUND Lemgo – Obstsortenbestimmung</a> · <a href="https://www.kob-bavendorf.de/reifegruppen.html" target="_blank" rel="noopener noreferrer">KOB – Reifegruppen</a></p>
       </details>
     </div>`;
 }
@@ -724,12 +880,13 @@ async function recognize() {
   const fruitFilter = $('recognizeFruitType').value;
   const selectedTaste = selectedTastes('recognizeTasteOptions');
   const selectedMonth = Number($('recognizeMonth').value) || null;
+  const selectedMorph = selectedMorphology('recognizeMorphologyOptions');
 
   const groups = {};
   for (const ex of examples) {
     const fruitType = ex.fruitType || 'apple';
     const key = ex.varietyKey || makeVarietyKey(fruitType, ex.variety);
-    if (fruitFilter !== 'unknown' && fruitType !== fruitFilter) continue;
+    if (fruitType !== fruitFilter) continue;
     if (!groups[key]) groups[key] = { key, name: ex.variety, fruitType, vectors: [] };
     groups[key].vectors.push(ex.embedding);
   }
@@ -750,35 +907,37 @@ async function recognize() {
       const meta = metaMap.get(group.key) || enrichMeta({ key: group.key, name: group.name, fruitType: group.fruitType, tastes: [] });
       const tScore = tasteMatch(selectedTaste, meta.tastes || []);
       const rScore = ripenessMatch(selectedMonth, meta);
-      let weighted = imageScore * 0.72; let weight = 0.72;
-      if (tScore !== null) { weighted += tScore * 0.18; weight += 0.18; }
+      const mScore = morphologyMatch(selectedMorph, meta.traits || {});
+      let weighted = imageScore * 0.66; let weight = 0.66;
+      if (tScore !== null) { weighted += tScore * 0.16; weight += 0.16; }
       if (rScore !== null) { weighted += rScore * 0.10; weight += 0.10; }
-      return { ...group, meta, rawImage, imageScore, tasteScore: tScore, ripenessScore: rScore, combined: weighted / weight };
+      if (mScore !== null) { weighted += mScore * 0.08; weight += 0.08; }
+      return { ...group, meta, rawImage, imageScore, tasteScore: tScore, ripenessScore: rScore, morphologyScore: mScore, combined: weighted / weight };
     }).sort((a,b) => b.combined - a.combined);
 
     const temperature = 9;
     const exps = scored.map(x => Math.exp((x.combined - scored[0].combined) * temperature));
     const sum = exps.reduce((a,b) => a+b, 0) || 1;
     const top = scored.slice(0, 3).map((x, i) => ({ ...x, probability: exps[i] / sum }));
-    const uncertain = top[0] && (top[0].combined < 0.52 || top[0].imageScore < 0.40);
-
     let html = `<h3>Wahrscheinlichste Sorten</h3><p class="hint">Auswertung aus ${recognizeItems.length} Foto${recognizeItems.length === 1 ? '' : 's'}${selectedTaste.length ? ', Geschmack' : ''}${selectedMonth ? ' und Reifezeit' : ''}${recognizeLocation ? ', Standort als Zusatzinfo' : ''}. Vergleichsfotos und Vergleichs-Standort werden nicht gespeichert.</p>`;
-    if (uncertain) html += '<div class="warning"><strong>Keine sichere Bestimmung.</strong> Die beste Übereinstimmung ist noch zu schwach. Weitere Ansichten oder mehr Trainingsbilder können helfen.</div>';
     if (recognizeLocation) html += `<div class="location-result"><strong>📍 Standort:</strong> ${escapeHtml(formatLocation(recognizeLocation).replace('📍 ', ''))}<br><span class="hint">Der Standort ist in dieser Testversion noch kein Bewertungsfaktor. Später können regionale Vorkommen einbezogen werden.</span></div>`;
     html += top.map(x => {
       const pct = Math.round(x.probability * 100);
       const imgPct = Math.round(x.imageScore * 100);
       const tasteText = x.tasteScore === null ? 'nicht bewertet' : `${Math.round(x.tasteScore * 100)} % passend`;
       const ripeText = x.ripenessScore === null ? 'nicht bewertet' : `${Math.round(x.ripenessScore * 100)} % passend`;
+      const morphText = x.morphologyScore === null ? 'nicht bewertet' : `${Math.round(x.morphologyScore * 100)} % passend`;
       return `<div class="result-card">
         <div class="result-head"><h3>${escapeHtml(x.meta.name || x.name)} <small>(${escapeHtml(fruitLabel(x.meta.fruitType || x.fruitType))})</small></h3><span class="probability">${pct} %</span></div>
         <div class="bar"><span style="width:${pct}%"></span></div>
-        <p class="score-details">Bild: ${imgPct} % · Geschmack: ${tasteText} · Reifezeit: ${ripeText}</p>
+        <p class="score-details">Bild: ${imgPct} % · Geschmack: ${tasteText} · Reifezeit: ${ripeText} · Merkmale: ${morphText}</p>
         ${renderMetaHtml(x.meta)}
       </div>`;
     }).join('');
     html += '<p class="hint">Die Prozentwerte sind geschätzte relative Wahrscheinlichkeiten innerhalb deiner angelernten Sammlung – keine botanische Garantie.</p>';
     $('results').innerHTML = html;
+    const findingBox = $('treeFindingBox'); if (findingBox) findingBox.classList.remove('hidden');
+    const findingSelect = $('findingVariety'); if (findingSelect) findingSelect.innerHTML = top.map(x => `<option value="${escapeHtml(x.meta.name || x.name)}">${escapeHtml(x.meta.name || x.name)} (${Math.round(x.probability*100)} %)</option>`).join('');
   } catch (err) {
     console.error(err); alert('Die Erkennung ist fehlgeschlagen.');
   } finally { btn.textContent = '🍎 Sorte erkennen'; refreshActionButtons(); }
@@ -804,6 +963,7 @@ async function searchVarieties() {
   const fruit = $('searchFruitType').value;
   const month = Number($('searchMonth').value) || null;
   const tastes = selectedTastes('searchTasteOptions');
+  const morph = selectedMorphology('searchMorphologyOptions');
   const examples = await getAllExamples();
   const photoByKey = new Map();
   for (const ex of examples) {
@@ -817,10 +977,12 @@ async function searchVarieties() {
     const textScore = text ? (textMatches ? (normalizeLookup(v.name).includes(text) ? 1 : 0.75) : 0) : null;
     const tScore = tasteMatch(tastes, v.tastes || []);
     const rScore = ripenessMatch(month, v);
+    const mScore = morphologyMatch(morph, v.traits || {});
     let total = 0, weight = 0;
-    if (textScore !== null) { total += textScore * 0.45; weight += 0.45; }
-    if (tScore !== null) { total += tScore * 0.35; weight += 0.35; }
-    if (rScore !== null) { total += rScore * 0.20; weight += 0.20; }
+    if (textScore !== null) { total += textScore * 0.30; weight += 0.30; }
+    if (tScore !== null) { total += tScore * 0.30; weight += 0.30; }
+    if (rScore !== null) { total += rScore * 0.15; weight += 0.15; }
+    if (mScore !== null) { total += mScore * 0.20; weight += 0.20; }
     if (!weight) { total = 1; weight = 1; }
     return { v, score: total / weight, photo: photoByKey.get(v.key) || null };
   }).filter(x => {
@@ -833,7 +995,8 @@ async function searchVarieties() {
   $('searchResults').innerHTML = `<h3>Passende Sorten</h3><p class="hint">Enthält deine eigenen Sortendaten und ${REFERENCE_VARIETIES.length} eingebaute Fachdatensätze.</p>` + rows.map(x => {
     const pct = Math.round(x.score * 100);
     const knowledgeBadge = x.v.builtInKnowledge ? '<span class="badge knowledge-badge">Fachwissen</span>' : '';
-    return `<div class="result-card"><div class="result-head"><h3>${escapeHtml(x.v.name)} <small>(${escapeHtml(fruitLabel(x.v.fruitType))})</small> ${knowledgeBadge}</h3>${(text || tastes.length || month) ? `<span class="probability">${pct} % passend</span>` : ''}</div>${renderMetaHtml(x.v)}</div>`;
+    const imageUrl = x.photo ? URL.createObjectURL(x.photo) : '';
+    return `<div class="result-card"><div class="result-head"><h3>${escapeHtml(x.v.name)} <small>(${escapeHtml(fruitLabel(x.v.fruitType))})</small> ${knowledgeBadge}</h3>${(text || tastes.length || month || Object.keys(morph).length) ? `<span class="probability">${pct} % passend</span>` : ''}</div>${renderMetaHtml(x.v, imageUrl)}</div>`;
   }).join('');
 }
 
@@ -896,20 +1059,20 @@ function refreshActionButtons() {
 }
 
 async function exportData() {
-  const examples = await getAllExamples(); const varieties = await getAllVarieties();
-  if (!examples.length && !varieties.length) return alert('Es gibt noch keine Daten zum Exportieren.');
+  const examples = await getAllExamples(); const varieties = await getAllVarieties(); const treeFindings = await getAllTreeFindings();
+  if (!examples.length && !varieties.length && !treeFindings.length) return alert('Es gibt noch keine Daten zum Exportieren.');
   const portableExamples = [];
   for (const ex of examples) portableExamples.push({
     variety: ex.variety, varietyKey: ex.varietyKey || null, fruitType: ex.fruitType || 'apple', embedding: ex.embedding,
     createdAt: ex.createdAt, viewType: ex.viewType || 'weitere', setId: ex.setId || null, location: ex.location || null, image: ex.image ? await blobToDataUrl(ex.image) : null
   });
-  const blob = new Blob([JSON.stringify({version:4, exportedAt:new Date().toISOString(), knowledgeVersion: window.SORTENWISSEN_VERSION || null, varieties, examples:portableExamples})], {type:'application/json'});
+  const blob = new Blob([JSON.stringify({version:5, exportedAt:new Date().toISOString(), knowledgeVersion: window.SORTENWISSEN_VERSION || null, varieties, examples:portableExamples, treeFindings})], {type:'application/json'});
   const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `apfelbuch-daten-${new Date().toISOString().slice(0,10)}.json`; a.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
 async function importData(file) {
   const text = await file.text(); const data = JSON.parse(text);
-  if (!data || ![1,2,3,4].includes(data.version) || !Array.isArray(data.examples)) throw new Error('Ungültiges Format');
+  if (!data || ![1,2,3,4,5].includes(data.version) || !Array.isArray(data.examples)) throw new Error('Ungültiges Format');
   if (Array.isArray(data.varieties)) {
     for (const v of data.varieties) {
       if (!v?.name) continue; const fruitType = v.fruitType || 'apple'; const key = v.key || makeVarietyKey(fruitType, v.name);
@@ -922,6 +1085,7 @@ async function importData(file) {
     await addExample({ variety: normalizeName(ex.variety), varietyKey: key, fruitType, embedding: ex.embedding, createdAt: ex.createdAt || new Date().toISOString(), viewType: ex.viewType || 'weitere', setId: ex.setId || null, location: ex.location || null, image: ex.image ? dataUrlToBlob(ex.image) : null });
     if (!(await getVariety(key))) await putVariety({ key, fruitType, name: normalizeName(ex.variety), synonyms:'', origin:'', tastes:[], ripenessStart:null, ripenessEnd:null, ripenessNote:'', usage:'', storage:'', description:'', sources:[], referenceId:null, createdAt:new Date().toISOString(), updatedAt:new Date().toISOString() });
   }
+  if (Array.isArray(data.treeFindings)) for (const f of data.treeFindings) await addTreeFinding({ ...f, id: undefined });
   await updateCollection();
 }
 
@@ -947,7 +1111,7 @@ function setupInstall() {
   $('installBtn').addEventListener('click', async () => { if (!deferredInstallPrompt) return; deferredInstallPrompt.prompt(); await deferredInstallPrompt.userChoice; deferredInstallPrompt = null; $('installBtn').classList.add('hidden'); });
 }
 
-$('varietyName').addEventListener('input', () => { const ref = updateKnowledgeMatch(); if (ref) applyReferenceToForm(ref, false, true); syncKnownVarietyMenu(); });
+$('varietyName').addEventListener('input', () => { renderVarietySuggestions(); const ref = updateKnowledgeMatch(); if (ref) applyReferenceToForm(ref, false, true); syncKnownVarietyMenu(); });
 $('varietyName').addEventListener('blur', () => { const ref = currentReference(); if (ref) applyReferenceToForm(ref, false, true); syncKnownVarietyMenu(); });
 $('trainFruitType').addEventListener('change', () => { syncRadioChoices('trainFruitTypeOptions', 'trainFruitType'); setupKnownVarietiesMenu(); const ref = updateKnowledgeMatch(); if (ref) applyReferenceToForm(ref, false, true); });
 $('recognizeFruitType').addEventListener('change', () => syncRadioChoices('recognizeFruitTypeOptions', 'recognizeFruitType'));
@@ -966,13 +1130,13 @@ async function addRecognizeFiles(e) {
   const added = await buildItems(e.target.files, false, recognizeItems.length, MAX_FILES - recognizeItems.length); recognizeItems.push(...added); e.target.value = ''; renderRecognizeGrid(); refreshActionButtons();
 }
 $('trainCamera').addEventListener('change', addTrainFiles);
-$('trainCameraBtn').addEventListener('click', () => openCamera('train'));
+$('trainCameraBtn').addEventListener('click', () => $('trainCamera').click());
 $('trainGallery').addEventListener('change', addTrainFiles);
 $('recognizeCamera').addEventListener('change', addRecognizeFiles);
-$('recognizeCameraBtn').addEventListener('click', () => openCamera('recognize'));
+$('recognizeCameraBtn').addEventListener('click', () => $('recognizeCamera').click());
 $('recognizeGallery').addEventListener('change', addRecognizeFiles);
 $('clearTrainSelectionBtn').addEventListener('click', () => { trainItems = []; $('trainCamera').value = ''; $('trainGallery').value = ''; renderTrainGrid(); refreshActionButtons(); });
-$('clearRecognizeSelectionBtn').addEventListener('click', () => { recognizeItems = []; $('recognizeCamera').value = ''; $('recognizeGallery').value = ''; $('results').innerHTML = ''; renderRecognizeGrid(); refreshActionButtons(); });
+$('clearRecognizeSelectionBtn').addEventListener('click', () => { recognizeItems = []; $('recognizeCamera').value = ''; $('recognizeGallery').value = ''; $('results').innerHTML = ''; $('treeFindingBox')?.classList.add('hidden'); renderRecognizeGrid(); refreshActionButtons(); });
 $('trainLocationBtn').addEventListener('click', () => requestLocation('train'));
 $('recognizeLocationBtn').addEventListener('click', () => requestLocation('recognize'));
 $('clearTrainLocationBtn').addEventListener('click', () => clearLocation('train'));
@@ -998,6 +1162,42 @@ $('clearBtn').addEventListener('click', async () => {
   if (confirm('Wirklich alle Sortenbeschreibungen, Trainingsfotos und KI-Trainingsdaten löschen?')) { await clearAllData(); await updateCollection(); $('results').innerHTML = ''; $('searchResults').innerHTML = ''; }
 });
 
+
+function setupDropZone(zoneId, kind) {
+  const zone=$(zoneId); if (!zone) return;
+  for (const ev of ['dragenter','dragover']) zone.addEventListener(ev,e=>{e.preventDefault(); zone.classList.add('dragging');});
+  for (const ev of ['dragleave','drop']) zone.addEventListener(ev,e=>{e.preventDefault(); zone.classList.remove('dragging');});
+  zone.addEventListener('drop', async e => {
+    const files=[...(e.dataTransfer?.files||[])].filter(f=>f.type.startsWith('image/'));
+    if (!files.length) return;
+    if (kind==='train') { const added=await buildItems(files,true,trainItems.length,MAX_FILES-trainItems.length); trainItems.push(...added); renderTrainGrid(); }
+    else { const added=await buildItems(files,false,recognizeItems.length,MAX_FILES-recognizeItems.length); recognizeItems.push(...added); renderRecognizeGrid(); }
+    refreshActionButtons();
+  });
+}
+
+async function saveTreeFinding() {
+  syncLocationText('recognize');
+  if (!recognizeLocation || (!recognizeLocation.label && !Number.isFinite(recognizeLocation.latitude))) return alert('Bitte für einen Baumfund zuerst den optionalen Standort angeben.');
+  const variety=$('findingVariety')?.value || '';
+  if (!variety) return alert('Bitte eine Sorte auswählen.');
+  await addTreeFinding({
+    variety, location: anonymizedLocation(recognizeLocation), condition:$('treeCondition')?.value||'', age:$('treeAge')?.value||'', notes:$('treeNotes')?.value?.trim()||'', createdAt:new Date().toISOString()
+  });
+  $('treeFindingStatus').textContent='Baumfund wurde lokal und ohne personenbezogene Angaben gespeichert.';
+}
+
+async function exportFindings() {
+  const rows=await getAllTreeFindings(); if (!rows.length) return alert('Noch keine Baumfunde gespeichert.');
+  const blob=new Blob([JSON.stringify({version:1, exportedAt:new Date().toISOString(), anonymized:true, findings:rows},null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download=`apfelbuch-baumfunde-${new Date().toISOString().slice(0,10)}.json`; a.click(); setTimeout(()=>URL.revokeObjectURL(url),1000);
+}
+
+setupDropZone('trainDropZone','train');
+setupDropZone('recognizeDropZone','recognize');
+$('saveTreeFindingBtn')?.addEventListener('click', ()=>saveTreeFinding().catch(err=>{console.error(err); alert('Baumfund konnte nicht gespeichert werden.');}));
+$('exportFindingsBtn')?.addEventListener('click', ()=>exportFindings().catch(err=>{console.error(err); alert('Export der Baumfunde fehlgeschlagen.');}));
+
 renderTasteChoices('trainTasteOptions', 'train');
 renderTasteChoices('recognizeTasteOptions', 'recognize');
 renderTasteChoices('searchTasteOptions', 'search');
@@ -1008,8 +1208,13 @@ setupMonthSelect('searchMonth', true);
 renderMonthChoices('ripenessStartOptions', 'ripenessStart', 'ripeness-start');
 renderMonthChoices('ripenessEndOptions', 'ripenessEnd', 'ripeness-end');
 renderMonthChoices('recognizeRipenessOptions', 'recognizeMonth', 'recognize-ripeness');
+renderMonthChoices('searchRipenessOptions', 'searchMonth', 'search-ripeness');
+renderRadioChoices('recognizeRipenessPhaseOptions', 'recognizeRipenessPhase', RIPENESS_PHASES, 'recognize-phase');
+renderMorphologyOptions('recognizeMorphologyOptions');
+renderMorphologyOptions('searchMorphologyOptions');
+renderMorphologyOptions('trainMorphologyOptions');
 renderRadioChoices('trainFruitTypeOptions', 'trainFruitType', [['apple','🍎 Apfel'],['pear','🍐 Birne']], 'train-fruit');
-renderRadioChoices('recognizeFruitTypeOptions', 'recognizeFruitType', [['apple','🍎 Apfel'],['pear','🍐 Birne'],['unknown','❓ Unsicher']], 'recognize-fruit');
+renderRadioChoices('recognizeFruitTypeOptions', 'recognizeFruitType', [['apple','🍎 Apfel'],['pear','🍐 Birne']], 'recognize-fruit');
 setupKnownVarietiesDatalist();
 setupKnownVarietiesMenu();
 renderLocation('train');

@@ -574,8 +574,27 @@ window.SORTENWISSEN = [
       {label:'BUND Lemgo – Oberösterreicher Weinbirne', url:'https://www.obstsortendatenbank.de/oberoesterreicher_weinbirne.htm'},
       {label:'Streuobst in Bayern – Most- und Weinherstellung', url:'https://www.streuobst-in-bayern.de/fileadmin/pdf_upload/MB_Empfehlenswertes_Obst_zur_Saft-_und_Weinherstellung.pdf'}
     ]
-  }
+  },
 
+
+  {
+    id: 'apple-gewuerzluiken', fruitType: 'apple', name: 'Gewürzluiken',
+    aliases: ['Gewürzluikenapfel'], synonyms: 'Gewürzluikenapfel',
+    origin: 'Zufallssämling; seit etwa 1885 von Nordwürttemberg aus verbreitet.',
+    tastes: ['sour','juicy'], ripenessStart: 10, ripenessEnd: 10, ripenessType: 'spät',
+    ripenessNote: 'Späte Sorte; nach KOB der Reifegruppe „spät“ zugeordnet.',
+    usage: 'Brennen, Most/Saft und Tafelobst',
+    storage: 'Als späte Sorte grundsätzlich lagergeeignet; die konkrete Lagerdauer ist in der hier verwendeten KOB-Kurzbeschreibung nicht beziffert.',
+    description: 'Mittelgroße, oft etwas unregelmäßige Frucht; meist kegelförmig, teils kugelig-abgeflacht. Die Grundfarbe geht von gelbgrün nach gelb, dazu kommt eine kräftige karmin- bis dunkelrote, häufig gestreifte Deckfarbe. Die Stielgrube ist meist mitteltief, eng und zimtfarben berostet; die Kelchgrube flach und fein gefaltet. Das Fruchtfleisch ist weiß bis grünlichweiß, frisch saftig und angenehm säuerlich. Typisch sind die dunkle Ausfärbung und die berostete Stielgrube.',
+    exampleImages: [
+      {url:'https://www.kob-bavendorf.de/files/Apfel-und-Birnensorten/Apfelsorten/Gew%C3%BCrzluiken%20SEZ.jpg', label:'KOB Bavendorf – Gewürzluiken', sourceUrl:'https://www.kob-bavendorf.de/sorten-detail/name/Gew%C3%BCrzluiken.html'}
+    ],
+    sources: [
+      {label:'KOB Bavendorf – Gewürzluiken', url:'https://www.kob-bavendorf.de/sorten-detail/name/Gew%C3%BCrzluiken.html'},
+      {label:'KOB Bavendorf – Reifegruppen', url:'https://www.kob-bavendorf.de/reifegruppen.html'},
+      {label:'BUND Lemgo – Obstsortenbestimmung', url:'https://www.bund-lemgo.de/Obstsortenbestimmung.html'}
+    ]
+  },
 ];
 
 
@@ -591,4 +610,38 @@ window.SORTENWISSEN = [
     'pear-gute-luise': {regions:['Hessen'], categories:['In Hessen verbreitete Tafelbirne']}
   };
   for (const item of window.SORTENWISSEN) Object.assign(item, tags[item.id] || {});
+})();
+
+// V9: strukturierte pomologische Merkmale für Suche/Bestimmung.
+// Nur Merkmale, die aus dem bisherigen Fachwissen eindeutig ableitbar bzw. fachlich etabliert sind;
+// fehlende Angaben bleiben bewusst offen und werden in der Suche neutral behandelt.
+(() => {
+  window.SORTENWISSEN_VERSION = '2026-09-15-v10-kob-bund-merkmale';
+  const traits = {
+    'apple-boskoop': {form:['flat_round','irregular'], color:['green','yellow','red'], russeting:['strong'], stemPit:['russeted']},
+    'apple-goldparmaene': {form:['round'], color:['yellow','red'], russeting:['dots']},
+    'apple-cox-orange': {form:['round'], color:['yellow','red','striped'], russeting:['dots']},
+    'apple-gravensteiner': {form:['round'], color:['yellow','red','striped']},
+    'apple-berlepsch': {form:['flat_round'], color:['yellow','red'], russeting:['dots']},
+    'apple-klarapfel': {form:['round'], color:['green','yellow'], bloom:['light']},
+    'apple-brettacher': {form:['flat_round'], color:['green','yellow','red']},
+    'apple-ontario': {form:['flat_round'], color:['green','yellow','red'], bloom:['strong'], stemPit:['deep'], calyxPit:['deep']},
+    'apple-zabergaeu': {form:['round'], color:['yellow','brownish'], russeting:['strong'], stemPit:['russeted']},
+    'apple-croncels': {form:['round'], color:['yellow','red']},
+    'apple-champagner-renette': {form:['flat_round'], color:['green','yellow','red']},
+    'apple-geheimrat-oldenburg': {form:['round'], color:['yellow','red','striped']},
+    'apple-winterglockenapfel': {form:['bell','high'], color:['green','yellow']},
+    'apple-rote-sternrenette': {form:['round'], color:['red'], bloom:['light']},
+    'apple-jonagold': {form:['round'], color:['yellow','red','flamed']},
+    'apple-golden-delicious': {form:['conical'], color:['yellow'], russeting:['dots']},
+    'apple-gewuerzluiken': {form:['conical','round','irregular'], color:['yellow','red','striped'], stemPit:['medium','narrow','russeted'], calyxPit:['shallow','narrow'], calyx:['closed'], russeting:['stem_only'], core:['small','closed','narrow'], seeds:['medium','elongated','well_formed']},
+    'pear-williams-christ': {form:['bell'], color:['green','yellow','red']},
+    'pear-conference': {form:['high'], color:['green','yellow','brownish'], russeting:['net']},
+    'pear-clapps-liebling': {form:['bell'], color:['green','yellow','red']},
+    'pear-gute-luise': {form:['bell'], color:['green','yellow','red']},
+    'pear-alexander-lucas': {form:['bell'], color:['green','yellow']},
+    'pear-kirchensaller-mostbirne': {form:['round'], color:['green','yellow','brownish']},
+    'pear-oberoesterreicher-weinbirne': {form:['round'], color:['green','yellow','brownish']}
+  };
+  for (const item of window.SORTENWISSEN) item.traits = Object.assign({}, item.traits || {}, traits[item.id] || {});
 })();

@@ -165,3 +165,34 @@ footer { text-align: center; color: var(--muted); padding: 20px 18px calc(20px +
   .month-choice-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
   .quick-facts { grid-template-columns:1fr; }
 }
+
+/* V9 – PlantNet-inspirierter Ablauf, Desktop-Upload, Merkmale und Baumfunde */
+.drop-zone{margin-top:12px;border:2px dashed #9bad96;border-radius:16px;padding:16px;text-align:center;color:#52614f;background:#f8fbf6;font-weight:650}
+.drop-zone.dragging{border-color:#2f6f3e;background:#eef7ec}
+.sub-choice-label,.mini-heading{margin:14px 0 8px;font-weight:750;color:#344432}
+.phase-choice-grid{grid-template-columns:repeat(4,minmax(0,1fr))}
+.feature-details{margin:14px 0;border:1px solid #dfe7db;border-radius:16px;background:#fff;padding:0}
+.feature-details>summary{padding:16px;cursor:pointer;list-style:none}
+.feature-details>summary::-webkit-details-marker{display:none}
+.morphology-filter-grid{display:grid;gap:14px}
+.morph-group{border-top:1px solid #edf0ea;padding-top:12px}.morph-group:first-child{border-top:0;padding-top:0}
+.morph-title{font-weight:750;margin-bottom:8px;color:#3e4f3b}
+.morph-options{display:flex;flex-wrap:wrap;gap:8px}
+.morph-chip{border:1px solid #c9d5c5;background:#f8faf7;border-radius:999px;padding:8px 11px;cursor:pointer;font:inherit;color:#334332}
+.morph-chip.active{background:#2f6f3e;color:white;border-color:#2f6f3e}
+.compact-grid{margin-top:8px}.compact-grid .choice-option{min-width:90px}
+.variety-hero{display:grid;grid-template-columns:88px 1fr;gap:12px;align-items:start;margin:10px 0}
+.variety-image{width:88px;height:88px;object-fit:cover;border-radius:14px;background:#eef2eb;border:1px solid #dde5d8}
+.variety-image-placeholder{display:flex;align-items:center;justify-content:center;font-size:34px}
+.example-links{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}.example-links a{font-size:.9rem}
+.traits-table{display:grid;grid-template-columns:minmax(110px,35%) 1fr;gap:6px 12px;margin:10px 0}.traits-table strong{color:#40503d}
+.tree-finding-box{margin:18px 0;border:1px solid #ccd9c7;border-radius:16px;background:#f7fbf5}.tree-finding-box>summary{padding:16px;cursor:pointer;font-weight:750}
+.source-note{font-size:.88rem;color:#647060;margin-top:8px}
+.suggestion-list{display:grid;gap:8px;margin:8px 0 0}.suggestion-btn{text-align:left;border:1px solid #dbe5d6;background:#fff;border-radius:12px;padding:10px 12px;cursor:pointer}.suggestion-btn:hover{background:#f1f7ef}
+@media(max-width:600px){.phase-choice-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.traits-table{grid-template-columns:1fr}.drop-zone{display:none}}
+
+.morph-title{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.morph-info{border:0;background:#edf5ea;color:#2f6f3e;border-radius:999px;width:30px;height:30px;display:inline-flex;align-items:center;justify-content:center;font:inherit;font-weight:800;cursor:pointer;flex:0 0 auto}
+.morph-info:hover{background:#dcebd7}
+.image-credit{font-size:.72rem;line-height:1.25;margin-top:4px;color:#687264}.image-credit a{color:inherit}
+.source-help{margin-top:18px}.source-help>summary{cursor:pointer;font-weight:750}

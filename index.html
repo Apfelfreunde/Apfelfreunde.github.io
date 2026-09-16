@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="theme-color" content="#2f6f3e" />
-  <meta name="description" content="Apfelbuch – Apfel- und Birnensorten mit Fotos, Geschmack, Reifezeit und optionalem Standort bestimmen." />
+  <meta name="description" content="Apfelbuch – Apfel- und Birnensorten mit Fotos, Geschmack, Reifezeit, Merkmalen und optionalem Standort bestimmen." />
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="icon" href="icon-192.png" />
   <title>Apfelbuch</title>
@@ -43,13 +43,14 @@
       <div class="step-card">
         <div class="step-title"><span>1</span><strong>Fotos aufnehmen oder auswählen</strong></div>
         <div class="photo-actions">
-          <button id="recognizeCameraBtn" class="photo-action camera" type="button">📷 Kamera öffnen</button>
+          <button id="recognizeCameraBtn" class="photo-action camera" type="button">📷 Foto aufnehmen</button>
           <label class="photo-action gallery">🖼️ Galerie öffnen<input id="recognizeGallery" type="file" accept="image/*" multiple hidden /></label>
           <input id="recognizeCamera" type="file" accept="image/*" capture="environment" hidden />
         </div>
         <p class="hint">Mehrmals Kamera oder Galerie öffnen, bis dein Satz vollständig ist. Ideal: Profil, Stielgrube, Kelchgrube und Schnittbild.</p>
         <button id="clearRecognizeSelectionBtn" class="secondary-dark small-action" type="button">Vergleichsfotos leeren</button>
         <div id="recognizeCount" class="selection-count">Noch keine Fotos ausgewählt.</div>
+        <div id="recognizeDropZone" class="drop-zone">Am PC: Fotos hier hineinziehen</div>
         <div id="recognizePreviewGrid" class="photo-grid"></div>
       </div>
 
@@ -63,6 +64,9 @@
         <div class="step-title"><span>3</span><strong>Reifezeit</strong></div>
         <p class="hint compact">Einfach den passenden Monat antippen – genauso wie beim Geschmack.</p>
         <div id="recognizeRipenessOptions" class="choice-grid month-choice-grid"></div>
+        <div class="sub-choice-label">Zeitraum im Monat</div>
+        <div id="recognizeRipenessPhaseOptions" class="choice-grid phase-choice-grid"></div>
+        <input id="recognizeRipenessPhase" type="hidden" value="" />
         <select id="recognizeMonth" class="hidden-select" aria-hidden="true" tabindex="-1"></select>
       </div>
 
@@ -72,9 +76,16 @@
         <select id="recognizeFruitType" class="hidden-select" aria-hidden="true" tabindex="-1">
           <option value="apple">Apfel</option>
           <option value="pear">Birne</option>
-          <option value="unknown">Unsicher / beide</option>
         </select>
       </div>
+
+      <details class="step-card feature-details">
+        <summary><strong>Weitere Fruchtmerkmale (optional)</strong></summary>
+        <div class="advanced-content">
+          <p class="hint compact">Nur Merkmale antippen, die du sicher erkennst. Tippe auf ⓘ neben einem Merkmal, wenn du die Bedeutung nachlesen möchtest.</p>
+          <div id="recognizeMorphologyOptions" class="morphology-filter-grid"></div>
+        </div>
+      </details>
 
       <div class="step-card optional-card">
         <div class="step-title"><span>5</span><strong>📍 Standort (optional)</strong></div>
@@ -89,6 +100,22 @@
 
       <button id="recognizeBtn" class="primary big-primary" disabled>🍎 Sorte erkennen</button>
       <div id="results" class="results"></div>
+      <details id="treeFindingBox" class="tree-finding-box hidden">
+        <summary>🌳 Baumfund freiwillig dokumentieren</summary>
+        <div class="advanced-content">
+          <p class="hint compact"><strong>Nur wenn du möchtest.</strong> Vergleichsfotos werden nicht gespeichert. Ein Baumfund wird erst gespeichert, wenn du unten ausdrücklich bestätigst. In einer späteren zentralen Version sind diese Daten nur für den Admin und anonymisiert auswertbar.</p>
+          <label for="findingVariety">Bestimmte Sorte</label>
+          <select id="findingVariety"></select>
+          <label for="treeCondition">Zustand des Baumes</label>
+          <select id="treeCondition"><option value="">nicht angegeben</option><option>sehr gut</option><option>gut</option><option>mittel</option><option>schlecht</option><option>absterbend</option></select>
+          <label for="treeAge">Ungefähres Alter</label>
+          <select id="treeAge"><option value="">nicht angegeben</option><option>unter 10 Jahre</option><option>10–30 Jahre</option><option>30–60 Jahre</option><option>60–100 Jahre</option><option>über 100 Jahre</option></select>
+          <label for="treeNotes">Notiz (optional)</label>
+          <textarea id="treeNotes" rows="2" placeholder="z. B. alter Streuobstbestand, Stammumfang, Besonderheiten"></textarea>
+          <button id="saveTreeFindingBtn" class="secondary-dark full" type="button">Baumfund lokal speichern</button>
+          <div id="treeFindingStatus" class="location-status"></div>
+        </div>
+      </details>
     </section>
 
     <section id="learn" class="panel">
@@ -98,13 +125,14 @@
       <div class="step-card">
         <div class="step-title"><span>1</span><strong>Fotos aufnehmen oder auswählen</strong></div>
         <div class="photo-actions">
-          <button id="trainCameraBtn" class="photo-action camera" type="button">📷 Kamera öffnen</button>
+          <button id="trainCameraBtn" class="photo-action camera" type="button">📷 Foto aufnehmen</button>
           <label class="photo-action gallery">🖼️ Galerie öffnen<input id="trainGallery" type="file" accept="image/*" multiple hidden /></label>
           <input id="trainCamera" type="file" accept="image/*" capture="environment" hidden />
         </div>
         <p class="hint">Empfohlen: Profil, Stielgrube, Kelchgrube und Schnittbild. Baumfoto optional. Bei Samsung kannst du die Galerie einfach mehrfach öffnen.</p>
         <button id="clearTrainSelectionBtn" class="secondary-dark small-action" type="button">Fotosatz leeren</button>
         <div id="trainCount" class="selection-count">Noch keine Fotos ausgewählt.</div>
+        <div id="trainDropZone" class="drop-zone">Am PC: Fotos hier hineinziehen</div>
         <div id="trainPreviewGrid" class="photo-grid"></div>
       </div>
 
@@ -147,6 +175,7 @@
         <label for="varietyName">Sorte suchen oder eingeben</label>
         <input id="varietyName" type="text" list="knownVarieties" placeholder="z. B. Boskoop – beim Tippen erscheinen Vorschläge" autocomplete="off" />
         <datalist id="knownVarieties"></datalist>
+        <div id="varietySuggestions" class="suggestion-list"></div>
 
         <div id="knowledgeMatch" class="knowledge-match">Wähle eine bekannte Sorte oder gib den Namen ein. Das Fachwissen kann passende Angaben automatisch ergänzen.</div>
         <button id="applyKnowledgeBtn" class="knowledge-button" type="button" disabled>Fachwissen übernehmen</button>
@@ -174,6 +203,9 @@
           <input id="ripenessNote" type="text" placeholder="z. B. Pflückreife Ende September" />
           <label for="description">Sortenbeschreibung</label>
           <textarea id="description" rows="5" placeholder="Aussehen, Fruchtfleisch, Besonderheiten …"></textarea>
+          <h3 class="mini-heading">Pomologische Merkmale</h3>
+          <p class="hint compact">Diese Merkmale können später bei der Suche und Bestimmung mithelfen.</p>
+          <div id="trainMorphologyOptions" class="morphology-filter-grid"></div>
           <div id="knowledgeSources" class="knowledge-sources hidden"></div>
           <button id="saveVarietyBtn" class="secondary-dark full" type="button">Sortendaten speichern / aktualisieren</button>
         </div>
@@ -185,19 +217,21 @@
 
     <section id="search" class="panel">
       <h2>Sorten suchen</h2>
-      <p>Hier kannst du deine eigene Sammlung <strong>und das eingebaute Fachwissen</strong> nach Name, Geschmack und Reifezeit durchsuchen.</p>
-      <label for="searchText">Name, Synonym oder Stichwort</label>
-      <input id="searchText" type="text" placeholder="z. B. Boskoop, würzig, Tafelapfel …" />
+      <p>Durchsuche deine Sammlung und das Fachwissen nach <strong>Name, Geschmack, Reifezeit und sichtbaren Fruchtmerkmalen</strong>.</p>
+      <label for="searchText">Name, Synonym, Region oder Stichwort</label>
+      <input id="searchText" type="text" placeholder="z. B. Boskoop, Hessen, Mostbirne …" />
       <div class="form-grid two">
         <div>
           <label for="searchFruitType">Fruchtart</label>
           <select id="searchFruitType"><option value="all">Alle</option><option value="apple">Apfel</option><option value="pear">Birne</option></select>
         </div>
-        <div><label for="searchMonth">Reifezeit</label><select id="searchMonth"></select></div>
+        <div><label>Reifezeit</label><div id="searchRipenessOptions" class="choice-grid month-choice-grid compact-grid"></div><select id="searchMonth" class="hidden-select" aria-hidden="true" tabindex="-1"></select></div>
       </div>
-      <fieldset class="taste-fieldset"><legend>Gewünschter Geschmack</legend><div id="searchTasteOptions" class="choice-grid"></div></fieldset>
+      <fieldset class="taste-fieldset"><legend>Geschmack</legend><div id="searchTasteOptions" class="choice-grid"></div></fieldset>
+      <details class="feature-details"><summary><strong>Weitere Merkmale eingrenzen</strong></summary><div class="advanced-content"><p class="hint compact">Hier findest du jetzt auch Schale, Bereifung, Berostung, Lentizellen, Duft, Kerngehäuse und Kerne. Mit ⓘ wird jedes Merkmal kurz erklärt.</p><div id="searchMorphologyOptions" class="morphology-filter-grid"></div></div></details>
       <button id="searchBtn" class="primary" type="button">Passende Sorten anzeigen</button>
       <div id="searchResults" class="results"></div>
+      <details class="info-card source-help"><summary><strong>Fachliche Grundlage der Bestimmung</strong></summary><p>BUND Lemgo nennt unter anderem Form, Farbe, Größe, Fruchtfleisch, Saftgehalt, Geschmack, Haltbarkeit, Kerne, Kerngehäuse, Kelch- und Stielgrube sowie Reifezeit als wichtige Merkmale. KOB Bavendorf ergänzt systematisch unter anderem Lentizellen, Fettigkeit, Bereifung und Berostung.</p><p><a href="https://www.bund-lemgo.de/Obstsortenbestimmung.html" target="_blank" rel="noopener noreferrer">BUND Lemgo – Obstsortenbestimmung</a> · <a href="https://www.kob-bavendorf.de/sortendatenbank-apfel.html" target="_blank" rel="noopener noreferrer">KOB – Sortendatenbank Apfel</a> · <a href="https://www.kob-bavendorf.de/reifegruppen.html" target="_blank" rel="noopener noreferrer">KOB – Reifegruppen</a></p></details>
     </section>
 
     <section id="collection" class="panel">
@@ -206,6 +240,7 @@
         <div class="collection-actions">
           <button id="exportBtn" class="secondary-dark">Daten exportieren</button>
           <label class="import-label secondary-dark">Daten importieren<input id="importFile" type="file" accept="application/json" hidden></label>
+          <button id="exportFindingsBtn" class="secondary-dark">Baumfunde exportieren</button>
           <button id="clearBtn" class="danger">Alle Daten löschen</button>
         </div>
       </div>
@@ -237,7 +272,7 @@
     </div>
   </div>
 
-  <footer><small>Apfelbuch Testversion · Trainingsdaten lokal gespeichert · Vergleichsfotos und Vergleichs-Standort werden nicht gespeichert.</small></footer>
+  <footer><small>Apfelbuch V10 · Trainingsdaten lokal gespeichert · Vergleichsfotos werden nicht gespeichert · Baumfunde nur nach ausdrücklicher Bestätigung.</small></footer>
   <script src="sortenwissen.js"></script>
   <script src="app.js"></script>
 </body>
