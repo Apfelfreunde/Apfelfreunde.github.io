@@ -19,13 +19,13 @@ const VIEW_TYPES = [
   ['profil', 'Profil / Seite'],
   ['stielgrube', 'Stielgrube / oben'],
   ['kelchgrube', 'Kelchgrube / unten'],
-  ['laengsschnitt', 'Längsschnitt / innen'],
-  ['querschnitt', 'Querschnitt / innen'],
+  ['laengsschnitt', 'Längsschnitt / Kernhaus'],
+  ['querschnitt', 'Querschnitt / Kernhaus'],
   ['kerne', 'Kerne / Samen'],
   ['baum', 'Baum (optional)'],
   ['weitere', 'Weitere Fruchtaufnahme']
 ];
-const DEFAULT_TYPES = ['profil', 'stielgrube', 'kelchgrube', 'laengsschnitt', 'querschnitt', 'kerne', 'baum', 'weitere', 'weitere', 'weitere', 'weitere', 'weitere', 'weitere', 'weitere', 'weitere', 'weitere', 'weitere'];
+const DEFAULT_TYPES = ['profil', 'stielgrube', 'kelchgrube', 'laengsschnitt', 'querschnitt', 'kerne', 'baum', 'weitere', 'weitere', 'weitere', 'weitere', 'weitere', 'weitere', 'weitere', 'weitere'];
 const TASTES = [
   ['sweet', 'süß'],
   ['sweet_sour', 'süß-säuerlich'],
@@ -37,7 +37,6 @@ const TASTES = [
   ['strong', 'kräftig']
 ];
 const MONTHS = [
-  [1,'Januar'], [2,'Februar'], [3,'März'], [4,'April'], [5,'Mai'], [6,'Juni'],
   [7,'Juli'], [8,'August'], [9,'September'], [10,'Oktober'], [11,'November'], [12,'Dezember']
 ];
 
@@ -54,18 +53,8 @@ const MORPHOLOGY_GROUPS = [
   ['lenticels','Lentizellen',[['few','wenige'],['many','zahlreich'],['small','klein/fein'],['large','groß'],['light','hell'],['dark','dunkel'],['distinct','auffällig']]],
   ['aroma','Duft / Geruch',[['none','kaum Duft'],['weak','schwach'],['medium','mittel'],['strong','stark'],['spicy','würzig'],['sweet','süßlich/fruchtig']]],
   ['core','Kerngehäuse',[['small','klein'],['medium','mittel'],['large','groß'],['open','offen'],['closed','geschlossen'],['narrow','enge Kernfächer']]],
-  ['seeds','Kerne',[['small','klein'],['medium','mittel'],['large','groß'],['broad','breit'],['long','lang'],['oval','oval'],['rounded','rundlich'],['pointed','zugespitzt'],['sharp_nose','spitznasig'],['blunt_nose','stumpfnasig'],['orange_brown','orangebraun'],['deer_brown','rehbraun'],['light_chestnut','hell kastanienbraun'],['chestnut','kastanienbraun'],['dark','schwarzbraun/dunkelbraun'],['well_formed','vollkommen ausgebildet'],['poorly_formed','unvollkommen ausgebildet']]],
-  ['size','Fruchtgröße',[['small','klein (<100 g)'],['medium','mittelgroß (<150 g)'],['large','groß (<250 g)'],['very_large','sehr groß (>250 g)']]],
-  ['ribbing','Fruchtrelief / Rippen',[['smooth','glatt/eben'],['angular','kantig'],['ribbed','rippig'],['bumps','mit Höckern']]],
-  ['fleshColor','Fleischfarbe',[['white','weiß'],['green_white','grünlich-weiß'],['yellow_white','gelblich-weiß'],['yellow','gelb'],['red_under_skin','unter der Schale gerötet']]],
-  ['fleshTexture','Fleischstruktur',[['loose','locker'],['tender','mürbe'],['medium_firm','mittelfest'],['very_firm','sehr fest']]],
-  ['pressure','Druckfestigkeit',[['soft','weich'],['medium','mittelfest'],['firm','fest'],['very_firm','sehr fest']]],
-  ['corePosition','Lage des Kernhauses',[['calyx_near','kelchnah'],['middle','Fruchtmitte'],['stem_near','stielnah']]],
-  ['axis','Achsenhöhle',[['closed','geschlossen'],['open','geöffnet'],['wide_open','weit geöffnet']]],
-  ['coreChambers','Kernkammern',[['narrow','eng'],['wide','weit']]],
-  ['coreWall','Kernhauswände',[['crescent','mondsichelförmig'],['arched','bogenförmig'],['bean','bohnenförmig'],['ear','ohrenförmig'],['backpack','rucksackförmig'],['smooth','glatt'],['torn','wattig/gerissen']]],
-  ['calyxRusset','Kelchberostung',[['dots','Punktrost'],['streaks','Strichrost'],['surface','flächig']]],
-  ['calyxLeaves','Kelchblätter',[['short','kurz (<3 mm)'],['medium_long','mittellang (>3 mm)'],['narrow_long','schmal und lang'],['wide_short','breit und kurz'],['touching','am Grunde sich berührend'],['separate','am Grunde getrennt']]]
+  ['seeds','Kerne – Form & Ausbildung',[['very_short','sehr kurz (< 6 mm)'],['short','kurz (6–7 mm)'],['medium_length','mittellang (7–8 mm)'],['long','lang (8–9 mm)'],['very_long','sehr lang (> 9 mm)'],['broad','breit'],['elongated','länglich'],['oval','oval'],['rounded','rundlich'],['pointed','zugespitzt/spitznasig'],['blunt','stumpfnasig'],['orange_brown','orangebraun'],['fawn_brown','rehbraun'],['light_chestnut','hell kastanienbraun'],['chestnut','kastanienbraun'],['black_brown','schwarzbraun'],['well_formed','voll/kräftig ausgebildet'],['partly_formed','teilweise ausgebildet'],['poorly_formed','klein/schrumpelig/taub'],['mixed_formation','gemischte Ausbildung']]],
+  ['seedPloidyHint','Ploidie-Hinweis aus Kernen',[['diploid_hint','eher diploider Hinweis'],['triploid_hint','eher triploider Hinweis'],['unclear','unklar / nicht bewerten']]]
 ];
 
 const MORPHOLOGY_INFO = {
@@ -80,18 +69,8 @@ const MORPHOLOGY_INFO = {
   lenticels: 'Kleine Punkte bzw. Poren auf der Schale. Größe, Farbe, Anzahl und Auffälligkeit können bei der Bestimmung helfen.',
   aroma: 'Der wahrnehmbare Geruch der reifen Frucht, z. B. schwach, stark, würzig oder süßlich-fruchtig.',
   core: 'Der innere Bereich mit den Kernfächern. Größe, Offenheit und Form können sortentypisch sein.',
-  seeds: 'Kerne möglichst frisch beurteilen. Form, Größe, Farbe und Ausbildung können wichtige Bestimmungsmerkmale sein.',
-  size: 'Fruchtgröße bzw. Gewicht. Wenn möglich mehrere typische Früchte vergleichen.',
-  ribbing: 'Vertiefungen, Kanten, Rippen oder Höcker an den Fruchtseiten.',
-  fleshColor: 'Farbe des frisch angeschnittenen Fruchtfleisches.',
-  fleshTexture: 'Beschaffenheit des Fruchtfleisches, z. B. locker, mürbe oder fest.',
-  pressure: 'Wie leicht sich die reife Frucht mit mäßigem Daumendruck eindrücken lässt.',
-  corePosition: 'Lage des Kernhauses im Längsschnitt: eher kelchnah, mittig oder stielnah.',
-  axis: 'Öffnung des Kernhauses entlang der Längsachse.',
-  coreChambers: 'Breite der Kernkammern im Schnittbild.',
-  coreWall: 'Form und Oberfläche der Kernhauswände im Längsschnitt.',
-  calyxRusset: 'Art der Berostung im Bereich der Kelchgrube.',
-  calyxLeaves: 'Größe, Form und Stellung der Kelchblätter.'
+  seeds: 'Mehrere frische Kerne vergleichen. Länge, Breite, Form, Farbe und besonders die Ausbildung können sortentypisch sein. Möglichst Kerne aus mehreren Früchten verwenden.',
+  seedPloidyHint: 'Nur als vorsichtiger Hinweis verwenden: gut oder schlecht ausgebildete Samen können zusammen mit weiteren Merkmalen zur Einschätzung beitragen. Kerngröße allein beweist weder Diploidie noch Triploidie; eine sichere Ploidiebestimmung erfordert fachliche/labordiagnostische Methoden.'
 };
 
 const REFERENCE_VARIETIES = Array.isArray(window.SORTENWISSEN) ? window.SORTENWISSEN : [];
@@ -693,7 +672,7 @@ async function buildItems(files, withTypes, startIndex = 0, availableSlots = MAX
   for (let i = 0; i < limited.length; i++) {
     try {
       const img = await loadImageFromFile(limited[i]); const position = startIndex + i;
-      items.push({ file: limited[i], img, type: withTypes ? (DEFAULT_TYPES[position] || 'weitere') : 'weitere' });
+      items.push({ file: limited[i], img, type: DEFAULT_TYPES[position] || 'weitere' });
     } catch (err) { console.error(err); }
   }
   return items;
@@ -722,7 +701,8 @@ function renderRecognizeGrid() {
     const number = document.createElement('div'); number.className = 'photo-number'; number.textContent = `Foto ${index + 1}`;
     const remove = document.createElement('button'); remove.type = 'button'; remove.className = 'remove-photo'; remove.textContent = 'Entfernen';
     remove.addEventListener('click', () => { recognizeItems.splice(index, 1); renderRecognizeGrid(); refreshActionButtons(); });
-    card.append(img, number, remove); grid.appendChild(card);
+    const select = makeTypeSelect(item.type, index); select.addEventListener('change', () => { recognizeItems[index].type = select.value; });
+    card.append(img, number, select, remove); grid.appendChild(card);
   });
 }
 
@@ -782,7 +762,7 @@ async function saveVarietyMetadata(showMessage=true, preserveBlank=false) {
 
 function missingRecommendedTypes() {
   const have = new Set(trainItems.map(x => x.type));
-  return ['profil', 'stielgrube', 'kelchgrube', 'schnittbild'].filter(x => !have.has(x));
+  return ['profil', 'stielgrube', 'kelchgrube', 'laengsschnitt', 'querschnitt', 'kerne'].filter(x => !have.has(x));
 }
 
 async function addTrainingExamples() {

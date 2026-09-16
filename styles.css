@@ -197,5 +197,5 @@ footer { text-align: center; color: var(--muted); padding: 20px 18px calc(20px +
 .image-credit{font-size:.72rem;line-height:1.25;margin-top:4px;color:#687264}.image-credit a{color:inherit}
 .source-help{margin-top:18px}.source-help>summary{cursor:pointer;font-weight:750}
 
-/* V11 – Bestimmungsführung */
-.accuracy-card{margin:18px 0 12px;padding:15px 16px;border-radius:16px;background:#fff6d8;border:1px solid #f1d98a;display:grid;gap:5px;color:#453b20}.accuracy-card span{font-size:.92rem;line-height:1.35}.determination-warning{margin:20px 0;padding:16px;border-radius:18px;background:#fff7df;border:1px solid #eed18b}.determination-warning h3{margin:0 0 10px;color:#7b4b00}.determination-warning p{margin:8px 0;line-height:1.45}.morph-group{border-bottom:1px solid #e5e9e3;padding:11px 0}.morph-title{font-weight:750}.result-card .probability{white-space:nowrap}
+/* V12 – Kernbestimmung */
+.seed-guidance { margin: .75rem 0 1rem; padding: .85rem 1rem; border-radius: 12px; background: #f5f7ef; border: 1px solid #dce5d3; line-height: 1.45; }

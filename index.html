@@ -47,7 +47,7 @@
           <label class="photo-action gallery">🖼️ Galerie öffnen<input id="recognizeGallery" type="file" accept="image/*" multiple hidden /></label>
           <input id="recognizeCamera" type="file" accept="image/*" capture="environment" hidden />
         </div>
-        <p class="hint">Mehrmals Kamera oder Galerie öffnen, bis dein Satz vollständig ist. Ideal: Profil, Stielgrube, Kelchgrube, Längsschnitt, Querschnitt und Kerne. Baumfoto optional.</p>
+        <p class="hint">Mehrmals Kamera oder Galerie öffnen, bis dein Satz vollständig ist. Ideal: Profil, Stielgrube, Kelchgrube, Längsschnitt, Querschnitt und mehrere gut sichtbare Kerne. Ordne jedem Foto danach den passenden Fototyp zu. Baumfoto optional.</p>
         <button id="clearRecognizeSelectionBtn" class="secondary-dark small-action" type="button">Vergleichsfotos leeren</button>
         <div id="recognizeCount" class="selection-count">Noch keine Fotos ausgewählt.</div>
         <div id="recognizeDropZone" class="drop-zone">Am PC: Fotos hier hineinziehen</div>
@@ -62,7 +62,7 @@
 
       <div class="step-card">
         <div class="step-title"><span>3</span><strong>Reifezeit</strong></div>
-        <p class="hint compact">Einfach den passenden Monat antippen – genauso wie beim Geschmack.</p>
+        <p class="hint compact">Die Reifezeit beginnt bei der Bestimmung ab Juli. Einfach den passenden Monat antippen.</p>
         <div id="recognizeRipenessOptions" class="choice-grid month-choice-grid"></div>
         <div class="sub-choice-label">Zeitraum im Monat</div>
         <div id="recognizeRipenessPhaseOptions" class="choice-grid phase-choice-grid"></div>
@@ -83,7 +83,7 @@
         <summary><strong>Weitere Fruchtmerkmale (optional)</strong></summary>
         <div class="advanced-content">
           <p class="hint compact">Nur Merkmale antippen, die du sicher erkennst. Tippe auf ⓘ neben einem Merkmal, wenn du die Bedeutung nachlesen möchtest.</p>
-          <div id="recognizeMorphologyOptions" class="morphology-filter-grid"></div>
+          <div class="seed-guidance"><strong>🌰 Kerne:</strong> Wenn möglich mehrere frische Kerne fotografieren und Länge/Form/Ausbildung angeben. Kerngröße allein ist kein sicherer Beweis für Diploidie oder Triploidie.</div><div id="recognizeMorphologyOptions" class="morphology-filter-grid"></div>
         </div>
       </details>
 
@@ -139,7 +139,7 @@
           <label class="photo-action gallery">🖼️ Galerie öffnen<input id="trainGallery" type="file" accept="image/*" multiple hidden /></label>
           <input id="trainCamera" type="file" accept="image/*" capture="environment" hidden />
         </div>
-        <p class="hint">Empfohlen: Profil, Stielgrube, Kelchgrube, Längsschnitt, Querschnitt und Kerne. Baumfoto optional. Bei Samsung kannst du die Galerie einfach mehrfach öffnen.</p>
+        <p class="hint">Empfohlen: Profil, Stielgrube, Kelchgrube, Längsschnitt, Querschnitt und mehrere gut sichtbare Kerne. Kernfotos werden als eigener Fototyp angelernt. Baumfoto optional. Bei Samsung kannst du die Galerie einfach mehrfach öffnen.</p>
         <button id="clearTrainSelectionBtn" class="secondary-dark small-action" type="button">Fotosatz leeren</button>
         <div id="trainCount" class="selection-count">Noch keine Fotos ausgewählt.</div>
         <div id="trainDropZone" class="drop-zone">Am PC: Fotos hier hineinziehen</div>
@@ -153,7 +153,7 @@
 
       <div class="step-card">
         <div class="step-title"><span>3</span><strong>Reifezeit</strong></div>
-        <p class="hint compact">Die Felder funktionieren wie beim Geschmack. Bei nur einem Monat wählst du bei „von“ und „bis“ denselben Monat.</p>
+        <p class="hint compact">Die Reifezeit beginnt ab Juli. Bei nur einem Monat wählst du bei „von“ und „bis“ denselben Monat.</p>
         <label>Reifezeit von</label>
         <div id="ripenessStartOptions" class="choice-grid month-choice-grid"></div>
         <select id="ripenessStart" class="hidden-select" aria-hidden="true" tabindex="-1"></select>
@@ -215,7 +215,7 @@
           <textarea id="description" rows="5" placeholder="Aussehen, Fruchtfleisch, Besonderheiten …"></textarea>
           <h3 class="mini-heading">Pomologische Merkmale</h3>
           <p class="hint compact">Diese Merkmale können später bei der Suche und Bestimmung mithelfen.</p>
-          <div id="trainMorphologyOptions" class="morphology-filter-grid"></div>
+          <div class="seed-guidance"><strong>🌰 Kerne anlernen:</strong> Möglichst mehrere Kerne und – wenn vorhanden – Kerne aus mehreren Früchten derselben Sorte verwenden. So kann die KI typische Kernbilder als eigene Trainingsansicht lernen.</div><div id="trainMorphologyOptions" class="morphology-filter-grid"></div>
           <div id="knowledgeSources" class="knowledge-sources hidden"></div>
           <button id="saveVarietyBtn" class="secondary-dark full" type="button">Sortendaten speichern / aktualisieren</button>
         </div>
@@ -284,7 +284,7 @@
     </div>
   </div>
 
-  <footer><small>Apfelbuch V11 · Trainingsdaten lokal gespeichert · Vergleichsfotos werden nicht gespeichert · Baumfunde nur nach ausdrücklicher Bestätigung.</small></footer>
+  <footer><small>Apfelbuch V12 · Trainingsdaten lokal gespeichert · Vergleichsfotos werden nicht gespeichert · Baumfunde nur nach ausdrücklicher Bestätigung.</small></footer>
   <script src="sortenwissen.js"></script>
   <script src="app.js"></script>
 </body>
