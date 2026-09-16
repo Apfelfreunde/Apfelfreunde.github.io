@@ -47,7 +47,7 @@
           <label class="photo-action gallery">🖼️ Galerie öffnen<input id="recognizeGallery" type="file" accept="image/*" multiple hidden /></label>
           <input id="recognizeCamera" type="file" accept="image/*" capture="environment" hidden />
         </div>
-        <p class="hint">Mehrmals Kamera oder Galerie öffnen, bis dein Satz vollständig ist. Ideal: Profil, Stielgrube, Kelchgrube und Schnittbild.</p>
+        <p class="hint">Mehrmals Kamera oder Galerie öffnen, bis dein Satz vollständig ist. Ideal: Profil, Stielgrube, Kelchgrube, Längsschnitt, Querschnitt und Kerne. Baumfoto optional.</p>
         <button id="clearRecognizeSelectionBtn" class="secondary-dark small-action" type="button">Vergleichsfotos leeren</button>
         <div id="recognizeCount" class="selection-count">Noch keine Fotos ausgewählt.</div>
         <div id="recognizeDropZone" class="drop-zone">Am PC: Fotos hier hineinziehen</div>
@@ -98,8 +98,18 @@
         <div id="recognizeLocationStatus" class="location-status">Kein Standort angegeben.</div>
       </div>
 
+      <div class="accuracy-card">
+        <strong>🎯 Je mehr du angibst, desto fundierter wird die Eingrenzung.</strong>
+        <span>Alle Zusatzangaben sind freiwillig. Nicht beantwortete Merkmale werden nicht gegen eine Sorte gewertet.</span>
+      </div>
       <button id="recognizeBtn" class="primary big-primary" disabled>🍎 Sorte erkennen</button>
       <div id="results" class="results"></div>
+      <section class="determination-warning">
+        <h3>⚠️ Hinweis zur Sortenbestimmung</h3>
+        <p>Die Bestimmung ist eine Einschätzung anhand der vorhandenen Fotos und eingegebenen Merkmale. Eine 100-prozentige Bestimmungssicherheit kann nicht garantiert werden.</p>
+        <p>Fotos und eine digitale Bestimmung ersetzen nicht die fachkundige Untersuchung durch eine Pomologin oder einen Pomologen.</p>
+        <p>Bei unbekannten, seltenen oder schwer unterscheidbaren Sorten kannst du im Internet nach Pomologen, Obstbauvereinen, Sortenerhaltungsinitiativen und anderen Fachstellen suchen. Manche bieten eine professionelle Bestimmung nach Einsendung von Früchten an. Informiere dich vorher, wie viele Früchte und welche Angaben benötigt werden.</p>
+      </section>
       <details id="treeFindingBox" class="tree-finding-box hidden">
         <summary>🌳 Baumfund freiwillig dokumentieren</summary>
         <div class="advanced-content">
@@ -129,7 +139,7 @@
           <label class="photo-action gallery">🖼️ Galerie öffnen<input id="trainGallery" type="file" accept="image/*" multiple hidden /></label>
           <input id="trainCamera" type="file" accept="image/*" capture="environment" hidden />
         </div>
-        <p class="hint">Empfohlen: Profil, Stielgrube, Kelchgrube und Schnittbild. Baumfoto optional. Bei Samsung kannst du die Galerie einfach mehrfach öffnen.</p>
+        <p class="hint">Empfohlen: Profil, Stielgrube, Kelchgrube, Längsschnitt, Querschnitt und Kerne. Baumfoto optional. Bei Samsung kannst du die Galerie einfach mehrfach öffnen.</p>
         <button id="clearTrainSelectionBtn" class="secondary-dark small-action" type="button">Fotosatz leeren</button>
         <div id="trainCount" class="selection-count">Noch keine Fotos ausgewählt.</div>
         <div id="trainDropZone" class="drop-zone">Am PC: Fotos hier hineinziehen</div>
@@ -253,7 +263,9 @@
         <li><strong>Profil:</strong> mehrere ausgereifte Früchte von der Seite</li>
         <li><strong>Stielgrube:</strong> Frucht von oben</li>
         <li><strong>Kelchgrube:</strong> Frucht von unten</li>
-        <li><strong>Schnittbild:</strong> sauber angeschnitten und aufgedreht</li>
+        <li><strong>Längsschnitt:</strong> sauber durch Stiel und Kelch geschnitten</li>
+        <li><strong>Querschnitt:</strong> quer durch die Frucht, Kernhaus gut sichtbar</li>
+        <li><strong>Kerne:</strong> mehrere frische Kerne nah und scharf fotografieren</li>
         <li><strong>Baum:</strong> optional</li>
         <li>bis zu 15 Fotos je Durchgang; später weitere Trainingssätze möglich</li>
       </ul>
@@ -272,7 +284,7 @@
     </div>
   </div>
 
-  <footer><small>Apfelbuch V10 · Trainingsdaten lokal gespeichert · Vergleichsfotos werden nicht gespeichert · Baumfunde nur nach ausdrücklicher Bestätigung.</small></footer>
+  <footer><small>Apfelbuch V11 · Trainingsdaten lokal gespeichert · Vergleichsfotos werden nicht gespeichert · Baumfunde nur nach ausdrücklicher Bestätigung.</small></footer>
   <script src="sortenwissen.js"></script>
   <script src="app.js"></script>
 </body>
