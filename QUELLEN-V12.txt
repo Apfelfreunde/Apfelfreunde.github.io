@@ -8,3 +8,8 @@ Birnen / spätere Erweiterung:
 Hinweis Kern/Ploidie:
 - Kerngröße, Kernform und Ausbildung werden als Merkmale erfasst.
 - Ploidie niemals allein aus der Kerngröße als sicher ausgeben. In der App nur als Hinweis zusammen mit weiteren Merkmalen behandeln.
+
+Äpfel / regionale Sortenreferenz:
+- 1000 Obstbäume für die Frankenalb – Sortenübersicht
+  https://1000obstbaeume.de/category/sorten/
+  Kartierung von Kernobstsorten im Nürnberger Land (Herbst 2012). Als zusätzliche Referenz für Sortennamen, regionale Vorkommen und verlinkte Sortenbeschreibungen verwenden. Angaben werden mit anderen pomologischen Quellen abgeglichen. Bilder nicht automatisch in die App übernehmen; Bildrechte beachten.
