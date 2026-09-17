@@ -204,3 +204,10 @@ footer { text-align: center; color: var(--muted); padding: 20px 18px calc(20px +
 .month-choice-grid .choice { cursor:pointer; min-height:44px; background:#fff; }
 .month-choice-grid .choice input { width:20px; height:20px; accent-color:var(--green); flex:0 0 auto; }
 .month-choice-grid .choice:has(input:checked) { border:2px solid var(--green); background:#edf5ee; color:var(--green-dark); font-weight:700; }
+
+/* V16 – Apfelallergie in der Sortensuche */
+.allergy-fieldset { margin-top: 16px; }
+.allergy-choice-grid { grid-template-columns: 1fr; }
+.allergy-warning { margin: 12px 0 0; padding: 12px 14px; border-radius: 12px; background: #fff4d6; line-height: 1.45; }
+.allergy-info { margin-top: 10px; padding: 10px 12px; border-radius: 10px; background: #f4f7f4; }
+.allergy-info strong { color: var(--green-dark); }

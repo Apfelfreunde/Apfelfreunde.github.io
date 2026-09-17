@@ -231,7 +231,7 @@
 
     <section id="search" class="panel">
       <h2>Sorten suchen</h2>
-      <p>Durchsuche deine Sammlung und das Fachwissen nach <strong>Name, Geschmack, Pflückreife, Genussreife, Lagerfähigkeit und sichtbaren Fruchtmerkmalen</strong>.</p>
+      <p>Durchsuche deine Sammlung und das Fachwissen nach <strong>Name, Geschmack, Pflückreife, Genussreife, Lagerfähigkeit, Apfelallergie und sichtbaren Fruchtmerkmalen</strong>.</p>
       <label for="searchText">Name, Synonym, Region oder Stichwort</label>
       <input id="searchText" type="text" placeholder="z. B. Boskoop, Hessen, Mostbirne …" />
       <div class="form-grid two">
@@ -243,6 +243,15 @@
         <div><label>Genussreife</label><div id="searchEnjoymentOptions" class="choice-grid month-choice-grid compact-grid"></div><select id="searchEnjoymentMonth" class="hidden-select" aria-hidden="true" tabindex="-1"></select></div>
       </div>
       <label for="searchStorage">Lagerfähigkeit (optional)</label><input id="searchStorage" type="text" placeholder="z. B. Februar, lange lagerfähig" />
+      <fieldset class="taste-fieldset allergy-fieldset"><legend>Apfelallergie</legend>
+        <p class="hint compact">Optionaler Filter nach den gemeldeten Verträglichkeitsdaten von BUND Lemgo (Stand Oktober 2025). Die Einstufung ist keine medizinische Garantie.</p>
+        <div class="choice-grid allergy-choice-grid">
+          <label class="choice"><input type="radio" name="searchAllergy" value="" checked><span>Keine Auswahl / egal</span></label>
+          <label class="choice"><input type="radio" name="searchAllergy" value="likelySuitable"><span>Wahrscheinlich für Allergiker geeignet</span></label>
+          <label class="choice"><input type="radio" name="searchAllergy" value="likelyUnsuitable"><span>Wahrscheinlich für Allergiker nicht geeignet</span></label>
+        </div>
+        <p class="allergy-warning"><strong>⚠️ Wichtig:</strong> Bei bekannter oder schwerer Apfelallergie Sorten nicht aufgrund der App selbst ausprobieren. Hochgradig sensibilisierte Allergiker sollten Tests nur mit Zustimmung und Betreuung ihres Facharztes durchführen.</p>
+      </fieldset>
       <fieldset class="taste-fieldset"><legend>Geschmack</legend><div id="searchTasteOptions" class="choice-grid"></div></fieldset>
       <details class="feature-details"><summary><strong>Weitere Merkmale eingrenzen</strong></summary><div class="advanced-content"><p class="hint compact">Hier findest du jetzt auch Schale, Bereifung, Berostung, Lentizellen, Duft, Kerngehäuse und Kerne. Mit ⓘ wird jedes Merkmal kurz erklärt.</p><div id="searchMorphologyOptions" class="morphology-filter-grid"></div></div></details>
       <button id="searchBtn" class="primary" type="button">Passende Sorten anzeigen</button>

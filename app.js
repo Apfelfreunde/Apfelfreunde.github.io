@@ -36,6 +36,59 @@ const TASTES = [
   ['juicy', 'saftig'],
   ['strong', 'kräftig']
 ];
+// V16: BUND Lemgo – gemeldete Apfelallergie-Verträglichkeit, Stand Oktober 2025.
+// Die Zahlen sind Meldungen, keine individuelle medizinische Vorhersage.
+const ALLERGY_DATA = {
+  'adamsapfel': [9,1,1310], 'adams parmane': [9,0,1879], 'adersleber kalvill':[5,1,2194],
+  'alkmene':[141,10,940], 'ananasrenette':[31,3,1372], 'apfel aus croncels':[9,0,2003],
+  'altlander pfannkuchenapfel':[24,4,1630], 'berlepsch':[95,5,756], 'goldrenette freiherr von berlepsch':[95,5,756],
+  'berner rosenapfel':[12,0,1033], 'biesterfelder renette':[27,1,1120], 'braeburn':[10,91,414],
+  'brettacher samling':[15,0,604], 'carola':[17,0,970], 'champagner renette':[21,3,1514],
+  'cox orangen-renette':[25,28,943], 'cox orange':[25,28,943], 'damasonrenette':[7,0,2949],
+  'danziger kantapfel':[20,1,1465], 'dulmener rosenapfel':[13,2,1521], 'eifeler rambur':[28,2,1209],
+  'elstar':[23,80,567], 'filippas apfel':[7,1,null], 'finkenwerder herbstprinz':[40,5,1592],
+  'fuji':[2,12,null], 'gala':[5,53,338], 'galloway pepping':[5,0,1033],
+  'geheimrat dr. oldenburg':[10,4,1471], 'gewurzluiken':[9,6,1927], 'golden delicious':[5,176,402],
+  'goldparmane':[134,11,909], 'goldrenette aus blenheim':[16,0,1828], 'grahams jubilaumsapfel':[1,3,null],
+  'granny smith':[1,94,193], 'graue herbstrenette':[5,0,1223], 'gravensteiner':[64,16,1180],
+  'himbeerapfel aus holowous':[33,1,1853], 'holsteiner cox':[28,5,1695], 'jakob lebel':[14,2,1460],
+  'james grieve':[19,7,443], 'jonagold':[1,83,496], 'jonathan':[9,2,1005], 'kaiser wilhelm':[49,4,1140],
+  'kasseler renette':[6,0,1724], 'kanadarenette':[7,0,1800], 'krugers dickstiel':[6,1,616],
+  'landsberger renette':[14,2,898], 'luxemburger triumph':[6,0,1155], 'madame lesans kalvill':[10,0,null],
+  'metzrenette':[4,0,2296], 'minister von hammerstein':[7,0,576], 'mutterapfel':[6,0,1591],
+  'notarisapfel':[9,0,1585], 'ontario':[47,3,2790], 'perle von angeln':[3,0,1022], 'pilot':[12,3,null],
+  'pink lady':[11,41,438], 'pinova':[24,7,481], 'prinz albrecht von preussen':[68,6,1231],
+  'rheinischer krummstiel':[7,0,1757], 'rheinischer winterrambur':[10,0,1064], 'ribston pepping':[12,2,1629],
+  'rote sternrenette':[11,2,930], 'roter berlepsch':[15,1,926], 'roter boskoop':[148,10,938],
+  'roter delicious':[0,19,null], 'roter eiserapfel':[5,1,1030], 'rubinette':[63,8,883], 'santana':[106,9,437],
+  'schoner aus boskoop':[114,14,1970], 'schoner aus herrnhut':[11,2,1839], 'schoner aus nordhausen':[7,1,1143],
+  'schoner vom lindenhaus':[6,0,1934], 'seestermuher zitronenapfel':[11,4,1208], 'sertürners renette':[6,0,1428],
+  'stina lohmann':[6,0,719], 'tannenkruger':[12,2,1083], 'topaz':[34,24,389], 'weisser klarapfel':[35,1,405],
+  'weisser winterglockenapfel':[56,4,1430], 'weisser winterkalvill':[6,0,1685], 'weisser wintertaffetapfel':[6,0,820],
+  'wellant':[58,5,599], 'wobers rambur':[13,1,910], 'zuccalmaglios renette':[16,0,680]
+};
+function allergyLookup(name, synonyms='') {
+  const names = [name, ...(String(synonyms||'').split(/[,;/]/))].map(normalizeLookup);
+  for (const n of names) if (ALLERGY_DATA[n]) return ALLERGY_DATA[n];
+  for (const [k,v] of Object.entries(ALLERGY_DATA)) if (names.some(n => n && (n.includes(k) || k.includes(n)))) return v;
+  return null;
+}
+function allergyClass(data) {
+  if (!data) return null;
+  const [ok,bad] = data;
+  if (ok > bad) return 'likelySuitable';
+  if (bad > ok) return 'likelyUnsuitable';
+  return null;
+}
+function allergyHtml(v) {
+  if ((v.fruitType || 'apple') !== 'apple') return '';
+  const d = allergyLookup(v.name, v.synonyms);
+  if (!d) return '<div class="allergy-info"><strong>Apfelallergie:</strong> Keine Daten in der hinterlegten BUND-Lemgo-Tabelle.</div>';
+  const [ok,bad,poly] = d, cls = allergyClass(d);
+  const label = cls === 'likelySuitable' ? 'wahrscheinlich für Allergiker geeignet' : cls === 'likelyUnsuitable' ? 'wahrscheinlich für Allergiker nicht geeignet' : 'keine eindeutige Einordnung';
+  return `<div class="allergy-info"><strong>Apfelallergie:</strong> ${escapeHtml(label)}<br><small>Gemeldete Verträglichkeit: ${ok} · Unverträglichkeit: ${bad}${poly ? ` · Polyphenole: ${poly} mg/kg bzw. laut Quellenkennzeichnung teils mg/l` : ''}. BUND Lemgo, Stand Okt. 2025. Keine medizinische Garantie.</small></div>`;
+}
+
 const PICK_MONTHS = [
   [7,'Juli'], [8,'August'], [9,'September'], [10,'Oktober'], [11,'November'], [12,'Dezember']
 ];
@@ -985,6 +1038,7 @@ async function searchVarieties() {
   const month = Number($('searchMonth').value) || null;
   const enjoymentMonth = Number($('searchEnjoymentMonth').value) || null;
   const storageQuery = normalizeLookup($('searchStorage').value);
+  const allergyFilter = document.querySelector('input[name="searchAllergy"]:checked')?.value || '';
   const tastes = selectedTastes('searchTasteOptions');
   const morph = selectedMorphology('searchMorphologyOptions');
   const examples = await getAllExamples();
@@ -1003,6 +1057,8 @@ async function searchVarieties() {
     const eScore = enjoymentMonth ? ripenessMatch(enjoymentMonth, {ripenessStart:v.enjoymentStart, ripenessEnd:v.enjoymentEnd}) : null;
     const storageScore = storageQuery ? (normalizeLookup(v.storage || '').includes(storageQuery) ? 1 : 0) : null;
     const mScore = morphologyMatch(morph, v.traits || {});
+    const allergyData = allergyLookup(v.name, v.synonyms);
+    const allergyMatch = !allergyFilter ? null : (allergyClass(allergyData) === allergyFilter ? 1 : 0);
     let total = 0, weight = 0;
     if (textScore !== null) { total += textScore * 0.30; weight += 0.30; }
     if (tScore !== null) { total += tScore * 0.30; weight += 0.30; }
@@ -1010,9 +1066,11 @@ async function searchVarieties() {
     if (eScore !== null) { total += eScore * 0.15; weight += 0.15; }
     if (storageScore !== null) { total += storageScore * 0.10; weight += 0.10; }
     if (mScore !== null) { total += mScore * 0.20; weight += 0.20; }
+    if (allergyMatch !== null) { total += allergyMatch * 0.25; weight += 0.25; }
     if (!weight) { total = 1; weight = 1; }
     return { v, score: total / weight, photo: photoByKey.get(v.key) || null };
   }).filter(x => {
+    if (allergyFilter && allergyClass(allergyLookup(x.v.name, x.v.synonyms)) !== allergyFilter) return false;
     if (!text) return true;
     const hay = normalizeLookup(`${x.v.name || ''} ${x.v.synonyms || ''} ${x.v.origin || ''} ${x.v.description || ''} ${x.v.usage || ''} ${x.v.storage || ''} ${x.v.ripenessNote || ''} ${(x.v.regions || []).join(' ')} ${(x.v.categories || []).join(' ')}`);
     return hay.includes(text);
@@ -1023,7 +1081,7 @@ async function searchVarieties() {
     const pct = Math.round(x.score * 100);
     const knowledgeBadge = x.v.builtInKnowledge ? '<span class="badge knowledge-badge">Fachwissen</span>' : '';
     const imageUrl = x.photo ? URL.createObjectURL(x.photo) : '';
-    return `<div class="result-card"><div class="result-head"><h3>${escapeHtml(x.v.name)} <small>(${escapeHtml(fruitLabel(x.v.fruitType))})</small> ${knowledgeBadge}</h3>${(text || tastes.length || month || enjoymentMonth || storageQuery || Object.keys(morph).length) ? `<span class="probability">${pct} % passend</span>` : ''}</div>${renderMetaHtml(x.v, imageUrl)}</div>`;
+    return `<div class="result-card"><div class="result-head"><h3>${escapeHtml(x.v.name)} <small>(${escapeHtml(fruitLabel(x.v.fruitType))})</small> ${knowledgeBadge}</h3>${(text || tastes.length || month || enjoymentMonth || storageQuery || allergyFilter || Object.keys(morph).length) ? `<span class="probability">${pct} % passend</span>` : ''}</div>${renderMetaHtml(x.v, imageUrl)}${allergyHtml(x.v)}</div>`;
   }).join('');
 }
 
