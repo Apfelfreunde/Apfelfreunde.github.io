@@ -616,7 +616,7 @@ window.SORTENWISSEN = [
 // Nur Merkmale, die aus dem bisherigen Fachwissen eindeutig ableitbar bzw. fachlich etabliert sind;
 // fehlende Angaben bleiben bewusst offen und werden in der Suche neutral behandelt.
 (() => {
-  window.SORTENWISSEN_VERSION = '2026-09-15-v10-kob-bund-merkmale';
+  window.SORTENWISSEN_VERSION = '2026-09-28-v17-formen-birnen';
   const traits = {
     'apple-boskoop': {form:['flat_round','irregular'], color:['green','yellow','red'], russeting:['strong'], stemPit:['russeted']},
     'apple-goldparmaene': {form:['round'], color:['yellow','red'], russeting:['dots']},
@@ -635,13 +635,13 @@ window.SORTENWISSEN = [
     'apple-jonagold': {form:['round'], color:['yellow','red','flamed']},
     'apple-golden-delicious': {form:['conical'], color:['yellow'], russeting:['dots']},
     'apple-gewuerzluiken': {form:['conical','round','irregular'], color:['yellow','red','striped'], stemPit:['medium','narrow','russeted'], calyxPit:['shallow','narrow'], calyx:['closed'], russeting:['stem_only'], core:['small','closed','narrow'], seeds:['medium','elongated','well_formed']},
-    'pear-williams-christ': {form:['bell'], color:['green','yellow','red']},
-    'pear-conference': {form:['high'], color:['green','yellow','brownish'], russeting:['net']},
-    'pear-clapps-liebling': {form:['bell'], color:['green','yellow','red']},
+    'pear-williams-christ': {form:['bell'], flesh:['melting','juicy'], color:['green','yellow','red']},
+    'pear-conference': {form:['high','bottle'], color:['green','yellow','brownish'], russeting:['net']},
+    'pear-clapps-liebling': {form:['bell'], flesh:['melting','fine','juicy'], color:['green','yellow','red']},
     'pear-gute-luise': {form:['bell'], color:['green','yellow','red']},
     'pear-alexander-lucas': {form:['bell'], color:['green','yellow']},
-    'pear-kirchensaller-mostbirne': {form:['round'], color:['green','yellow','brownish']},
-    'pear-oberoesterreicher-weinbirne': {form:['round'], color:['green','yellow','brownish']}
+    'pear-kirchensaller-mostbirne': {form:['turbinate'], flesh:['firm'], color:['green','yellow','brownish']},
+    'pear-oberoesterreicher-weinbirne': {form:['turbinate'], flesh:['juicy'], color:['green','yellow','brownish']}
   };
   for (const item of window.SORTENWISSEN) item.traits = Object.assign({}, item.traits || {}, traits[item.id] || {});
 })();

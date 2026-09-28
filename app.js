@@ -100,7 +100,12 @@ const MONTHS = PICK_MONTHS;
 
 const RIPENESS_PHASES = [['','egal'],['early','Anfang'],['mid','Mitte'],['late','Ende']];
 const MORPHOLOGY_GROUPS = [
-  ['form','Form',[['round','rund'],['flat_round','flachrund'],['high','hochgebaut'],['conical','kegelförmig'],['bell','glockenförmig'],['irregular','unregelmäßig']]],
+  // V17: Form ist bei Apfel und Birne ein zentrales Bestimmungsmerkmal.
+  // Bei Birnen bezeichnet „bergamottenförmig“ eine gedrungene/apfelförmige Fruchtform;
+  // „Butterbirne“ ist dagegen keine einzelne Form, sondern wird zusätzlich über Fleischbeschaffenheit erfasst.
+  ['form','Fruchtform',[['round','rund/kugelig'],['flat_round','flachrund/abgeplattet'],['high','hochgebaut'],['conical','kegelförmig'],['bell','glocken-/birnenförmig'],['bergamot','bergamottenförmig (breit/apfelförmig)'],['turbinate','kreiselförmig'],['bottle','flaschenförmig/langgezogen'],['barrel','fassförmig'],['ovoid','ei-/eiförmig'],['irregular','unregelmäßig/schief']]],
+  ['shapeDetail','Formdetails',[['broadest_top','größte Breite stielnah'],['broadest_middle','größte Breite mittig'],['broadest_bottom','größte Breite kelchnah'],['ribbed','deutlich gerippt/kantig'],['asymmetric','ungleichhälftig/asymmetrisch']]],
+  ['flesh','Fruchtfleisch',[['melting','schmelzend/butterartig'],['fine','fein'],['coarse','grob/griesig'],['firm','fest/knackig'],['juicy','sehr saftig'],['dry','eher trocken'],['stone_cells_few','wenig Steinzellen'],['stone_cells_many','deutlich Steinzellen']]],
   ['stemPit','Stielgrube',[['shallow','flach'],['medium','mitteltief'],['deep','tief'],['narrow','eng'],['wide','weit'],['russeted','berostet']]],
   ['calyxPit','Kelchgrube',[['shallow','flach'],['medium','mitteltief'],['deep','tief'],['narrow','eng'],['wide','weit'],['ribbed','gerippt/gefaltet']]],
   ['calyx','Kelch',[['open','offen'],['half_open','halb offen'],['closed','geschlossen']]],
@@ -116,7 +121,9 @@ const MORPHOLOGY_GROUPS = [
 ];
 
 const MORPHOLOGY_INFO = {
-  form: 'Die äußere Gestalt der Frucht, z. B. rund, flachrund, hochgebaut oder kegelförmig.',
+  form: 'Die Grundform der Frucht. Bei Birnen sind z. B. bergamottenförmig (breit/apfelförmig), kreiselförmig, birnen-/glockenförmig und flaschenförmig wichtige Gruppen. Bei Äpfeln helfen rund, flachrund, hochgebaut, kegelförmig oder unregelmäßig.',
+  shapeDetail: 'Zusätzliche Formmerkmale: Wo liegt die größte Breite? Ist die Frucht gerippt, kantig, schief oder ungleichhälftig? Solche Details helfen besonders bei ähnlichen Sorten.',
+  flesh: 'Beschaffenheit des Fruchtfleisches. Bei Birnen ist schmelzend/butterartig ein wichtiges Merkmal. Auch Feinheit, Saftigkeit, Festigkeit und fühlbare Steinzellen können bei der Eingrenzung helfen.',
   stemPit: 'Die Vertiefung rund um den Stiel. Tiefe, Breite und Berostung können sortentypisch sein.',
   calyxPit: 'Die Vertiefung an der Unterseite rund um den Kelch. Sie kann flach, tief, eng, weit oder gerippt sein.',
   calyx: 'Die vertrockneten Blütenreste an der Unterseite. Der Kelch kann offen, halb offen oder geschlossen sein.',
