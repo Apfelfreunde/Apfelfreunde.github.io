@@ -944,6 +944,47 @@ function renderMetaHtml(meta, imageUrl='') {
     </div>`;
 }
 
+
+function matchQuality(score) {
+  if (score >= 0.82) return 'sehr gute Übereinstimmung';
+  if (score >= 0.66) return 'gute Übereinstimmung';
+  if (score >= 0.50) return 'mittlere Übereinstimmung';
+  return 'wenige Merkmale stimmen überein';
+}
+
+function distinguishingTraits(a, b, selected={}) {
+  const ta = a?.traits || {}, tb = b?.traits || {};
+  const rows = [];
+  for (const [key, label] of MORPHOLOGY_GROUPS.map(g => [g[0], g[1]])) {
+    const av = Array.isArray(ta[key]) ? ta[key] : [];
+    const bv = Array.isArray(tb[key]) ? tb[key] : [];
+    if (!av.length || !bv.length) continue;
+    const overlap = av.filter(v => bv.includes(v));
+    const aOnly = av.filter(v => !bv.includes(v));
+    const bOnly = bv.filter(v => !av.includes(v));
+    if (!aOnly.length && !bOnly.length) continue;
+    const unanswered = !(Array.isArray(selected[key]) && selected[key].length);
+    rows.push({key, label, av, bv, overlap, aOnly, bOnly, unanswered});
+  }
+  rows.sort((x,y) => Number(y.unanswered)-Number(x.unanswered) || (y.aOnly.length+y.bOnly.length)-(x.aOnly.length+x.bOnly.length));
+  return rows;
+}
+
+function renderConfusionHelp(top, selectedMorph) {
+  if (!top || top.length < 2) return '';
+  const first = top[0], others = top.slice(1,3);
+  const blocks = others.map(other => {
+    const diffs = distinguishingTraits(first.meta, other.meta, selectedMorph);
+    if (!diffs.length) return `<div class="confusion-pair"><strong>${escapeHtml(first.meta.name)} ↔ ${escapeHtml(other.meta.name)}</strong><p>Für dieses Sortenpaar sind in der aktuellen Datenbank noch nicht genug strukturierte Detailmerkmale hinterlegt, um sichere Unterscheidungsmerkmale anzuzeigen.</p></div>`;
+    const rows = diffs.slice(0,5).map(d => `<div class="difference-row${d.unanswered ? ' unanswered' : ''}"><strong>${escapeHtml(d.label)}${d.unanswered ? ' · noch prüfen' : ''}</strong><span>${escapeHtml(first.meta.name)}: ${escapeHtml(d.av.map(v=>traitLabel(d.key,v)).join(', '))}</span><span>${escapeHtml(other.meta.name)}: ${escapeHtml(d.bv.map(v=>traitLabel(d.key,v)).join(', '))}</span></div>`).join('');
+    return `<div class="confusion-pair"><h4>${escapeHtml(first.meta.name)} ↔ ${escapeHtml(other.meta.name)}</h4>${rows}</div>`;
+  }).join('');
+  const next = others.flatMap(o => distinguishingTraits(first.meta,o.meta,selectedMorph)).filter(x=>x.unanswered);
+  const seen = new Set(); const questions = next.filter(x => !seen.has(x.key) && seen.add(x.key)).slice(0,4);
+  const questionHtml = questions.length ? `<div class="next-check"><strong>Als Nächstes besonders prüfen:</strong> ${questions.map(q=>escapeHtml(q.label)).join(' · ')}<br><small>Öffne oben „Weitere Fruchtmerkmale“ und trage nur Merkmale ein, die du sicher erkennst. Danach erneut „Sorte erkennen“ drücken.</small></div>` : '';
+  return `<section class="confusion-box"><h3>🔀 Verwechslersorten unterscheiden</h3><p class="hint">Die führenden Kandidaten werden anhand der bereits hinterlegten pomologischen Merkmale direkt miteinander verglichen. Fehlende Daten werden nicht als Gegenmerkmal gewertet.</p>${questionHtml}${blocks}</section>`;
+}
+
 async function recognize() {
   syncLocationText('recognize');
   if (!recognizeItems.length) return alert('Bitte zuerst mindestens ein Foto auswählen.');
@@ -996,19 +1037,21 @@ async function recognize() {
     let html = `<h3>Wahrscheinlichste Sorten</h3><p class="hint">Auswertung aus ${recognizeItems.length} Foto${recognizeItems.length === 1 ? '' : 's'}${selectedTaste.length ? ', Geschmack' : ''}${selectedMonth ? ' und Reifezeit' : ''}${recognizeLocation ? ', Standort als Zusatzinfo' : ''}. Vergleichsfotos und Vergleichs-Standort werden nicht gespeichert.</p>`;
     if (recognizeLocation) html += `<div class="location-result"><strong>📍 Standort:</strong> ${escapeHtml(formatLocation(recognizeLocation).replace('📍 ', ''))}<br><span class="hint">Der Standort ist in dieser Testversion noch kein Bewertungsfaktor. Später können regionale Vorkommen einbezogen werden.</span></div>`;
     html += top.map(x => {
-      const pct = Math.round(x.probability * 100);
+      const pct = Math.round(x.combined * 100);
+      const quality = matchQuality(x.combined);
       const imgPct = Math.round(x.imageScore * 100);
       const tasteText = x.tasteScore === null ? 'nicht bewertet' : `${Math.round(x.tasteScore * 100)} % passend`;
       const ripeText = x.ripenessScore === null ? 'nicht bewertet' : `${Math.round(x.ripenessScore * 100)} % passend`;
       const morphText = x.morphologyScore === null ? 'nicht bewertet' : `${Math.round(x.morphologyScore * 100)} % passend`;
       return `<div class="result-card">
-        <div class="result-head"><h3>${escapeHtml(x.meta.name || x.name)} <small>(${escapeHtml(fruitLabel(x.meta.fruitType || x.fruitType))})</small></h3><span class="probability">${pct} %</span></div>
+        <div class="result-head"><h3>${escapeHtml(x.meta.name || x.name)} <small>(${escapeHtml(fruitLabel(x.meta.fruitType || x.fruitType))})</small></h3><span class="probability">${escapeHtml(quality)}</span></div>
         <div class="bar"><span style="width:${pct}%"></span></div>
         <p class="score-details">Bild: ${imgPct} % · Geschmack: ${tasteText} · Reifezeit: ${ripeText} · Merkmale: ${morphText}</p>
         ${renderMetaHtml(x.meta)}
       </div>`;
     }).join('');
-    html += '<p class="hint">Die Prozentwerte sind geschätzte relative Wahrscheinlichkeiten innerhalb deiner angelernten Sammlung – keine botanische Garantie.</p>';
+    html += renderConfusionHelp(top, selectedMorph);
+    html += '<p class="hint">Die Einstufung beschreibt nur die Übereinstimmung mit deiner angelernten Sammlung und den hinterlegten Merkmalen. Sie ist keine botanische Garantie.</p>';
     $('results').innerHTML = html;
     const findingBox = $('treeFindingBox'); if (findingBox) findingBox.classList.remove('hidden');
     const findingSelect = $('findingVariety'); if (findingSelect) findingSelect.innerHTML = top.map(x => `<option value="${escapeHtml(x.meta.name || x.name)}">${escapeHtml(x.meta.name || x.name)} (${Math.round(x.probability*100)} %)</option>`).join('');
