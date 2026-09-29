@@ -643,6 +643,20 @@ function renderKnownConfusions(ref=currentReference()) {
   box.innerHTML=`<h3>🔀 Mögliche Verwechslersorten & Unterschiede</h3><p class="hint">Automatisch aus ähnlichen, bereits hinterlegten Merkmalen ermittelt. Das ist eine Prüfliste und keine sichere pomologische Aussage.</p>${blocks}<div class="next-check"><strong>Für die Nachprüfung:</strong> Form, Schalenfarbe/Berostung, Stiel- und Kelchgrube sowie Kerngehäuse/Kerne möglichst an mehreren typischen Früchten vergleichen.</div>`;
 }
 
+function renderKnownConfusionsHtml(ref) {
+  if (!ref || !ref.builtInKnowledge) return '';
+  const candidates=REFERENCE_VARIETIES.filter(x=>x.id!==ref.id && x.fruitType===ref.fruitType)
+    .map(x=>({meta:x, similarity:knownVarietySimilarity(ref,x), diffs:distinguishingTraits(ref,x,{})}))
+    .filter(x=>x.similarity>=0 && x.diffs.length)
+    .sort((a,b)=>b.similarity-a.similarity || b.diffs.length-a.diffs.length).slice(0,3);
+  if (!candidates.length) return `<section class="confusion-box search-confusions"><h3>🔀 Verwechslersorten & Unterschiede</h3><p class="hint">Für ${escapeHtml(ref.name)} sind im aktuellen Datenbestand noch nicht genug strukturierte Vergleichsmerkmale vorhanden.</p></section>`;
+  const blocks=candidates.map(({meta,diffs})=>{
+    const rows=diffs.slice(0,5).map(d=>`<div class="difference-row"><strong>${escapeHtml(d.label)}</strong><span>${escapeHtml(ref.name)}: ${escapeHtml(d.av.map(v=>traitLabel(d.key,v)).join(', '))}</span><span>${escapeHtml(meta.name)}: ${escapeHtml(d.bv.map(v=>traitLabel(d.key,v)).join(', '))}</span></div>`).join('');
+    return `<div class="confusion-pair"><h4>${escapeHtml(ref.name)} ↔ ${escapeHtml(meta.name)}</h4>${rows}</div>`;
+  }).join('');
+  return `<section class="confusion-box search-confusions"><h3>🔀 Verwechslersorten & Unterschiede</h3><p class="hint">Mögliche ähnliche Sorten aus den bereits hinterlegten pomologischen Merkmalen. Vergleiche besonders die unten genannten Unterschiede an mehreren typischen Früchten. Diese Prüfhilfe ersetzt keine professionelle pomologische Bestimmung.</p>${blocks}</section>`;
+}
+
 function applyReferenceToForm(ref=currentReference(), force=false, quiet=false) {
   if (!ref) { updateKnowledgeMatch(); return false; }
   $('trainFruitType').value = ref.fruitType;
@@ -1171,7 +1185,8 @@ async function searchVarieties() {
     const pct = Math.round(x.score * 100);
     const knowledgeBadge = x.v.builtInKnowledge ? '<span class="badge knowledge-badge">Fachwissen</span>' : '';
     const imageUrl = x.photo ? URL.createObjectURL(x.photo) : '';
-    return `<div class="result-card"><div class="result-head"><h3>${escapeHtml(x.v.name)} <small>(${escapeHtml(fruitLabel(x.v.fruitType))})</small> ${knowledgeBadge}</h3>${(text || tastes.length || month || enjoymentMonth || storageQuery || allergyFilter || Object.keys(morph).length) ? `<span class="probability">${pct} % passend</span>` : ''}</div>${renderMetaHtml(x.v, imageUrl)}${allergyHtml(x.v)}</div>`;
+    const knownRef = x.v.builtInKnowledge ? (findReference(x.v.fruitType, x.v.name) || x.v) : null;
+    return `<div class="result-card"><div class="result-head"><h3>${escapeHtml(x.v.name)} <small>(${escapeHtml(fruitLabel(x.v.fruitType))})</small> ${knowledgeBadge}</h3>${(text || tastes.length || month || enjoymentMonth || storageQuery || allergyFilter || Object.keys(morph).length) ? `<span class="probability">${pct} % passend</span>` : ''}</div>${renderMetaHtml(x.v, imageUrl)}${allergyHtml(x.v)}${renderKnownConfusionsHtml(knownRef)}</div>`;
   }).join('');
 }
 

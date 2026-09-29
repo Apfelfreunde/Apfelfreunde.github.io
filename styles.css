@@ -224,3 +224,7 @@ footer { text-align: center; color: var(--muted); padding: 20px 18px calc(20px +
 /* V18 – bekannte Sorte direkt mit möglichen Verwechslersorten vergleichen */
 #knownConfusions{margin-top:12px}
 #knownConfusions.hidden{display:none}
+
+/* V19 – Verwechslersorten direkt in den Suchergebnissen */
+.search-confusions{margin-top:14px;background:#fffdf4;border-color:#e5d9a8}
+.search-confusions .hint{margin-bottom:8px}
