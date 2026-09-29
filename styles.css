@@ -219,3 +219,8 @@ footer { text-align: center; color: var(--muted); padding: 20px 18px calc(20px +
 .difference-row{display:grid;grid-template-columns:minmax(120px,.8fr) 1fr 1fr;gap:8px 12px;padding:9px 0;border-top:1px solid #e8eee5}.difference-row:first-of-type{border-top:0}.difference-row.unanswered{background:#fffdf4;border-radius:10px;padding:9px}
 .next-check{margin:12px 0;padding:12px 14px;border-radius:12px;background:#fff4d6;line-height:1.45}
 @media(max-width:650px){.difference-row{grid-template-columns:1fr}.difference-row span{display:block}}
+
+
+/* V18 – bekannte Sorte direkt mit möglichen Verwechslersorten vergleichen */
+#knownConfusions{margin-top:12px}
+#knownConfusions.hidden{display:none}

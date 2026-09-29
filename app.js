@@ -593,14 +593,54 @@ function updateKnowledgeMatch(message='') {
   if (!box || !btn) return ref;
   if (!normalizeName($('varietyName').value)) {
     box.textContent = 'Tippe einen bekannten Sortennamen ein. Das eingebaute Fachwissen kann passende Angaben automatisch ergänzen.';
-    btn.disabled = true; renderKnowledgeSources([]); return null;
+    btn.disabled = true; renderKnowledgeSources([]); renderKnownConfusions(null); return null;
   }
   if (!ref) {
     box.textContent = 'Für diesen Namen ist im eingebauten Grundbestand noch kein Fachwissen hinterlegt. Du kannst die Angaben trotzdem selbst speichern.';
-    btn.disabled = true; renderKnowledgeSources([]); return null;
+    btn.disabled = true; renderKnowledgeSources([]); renderKnownConfusions(null); return null;
   }
   box.innerHTML = `<strong>Fachwissen gefunden:</strong> ${escapeHtml(ref.name)} (${escapeHtml(fruitLabel(ref.fruitType))})${message ? ` · ${escapeHtml(message)}` : ''}`;
-  btn.disabled = false; renderKnowledgeSources(ref.sources || []); return ref;
+  btn.disabled = false; renderKnowledgeSources(ref.sources || []); renderKnownConfusions(ref); return ref;
+}
+
+function knownVarietySimilarity(a, b) {
+  if (!a || !b || a.fruitType !== b.fruitType) return -1;
+  const ta=a.traits||{}, tb=b.traits||{};
+  let score=0, weight=0;
+  for (const [key] of MORPHOLOGY_GROUPS) {
+    const av=Array.isArray(ta[key])?ta[key]:[], bv=Array.isArray(tb[key])?tb[key]:[];
+    if (!av.length || !bv.length) continue;
+    weight += 2;
+    const inter=av.filter(v=>bv.includes(v)).length;
+    const union=new Set([...av,...bv]).size || 1;
+    score += 2*(inter/union);
+  }
+  if (a.ripenessStart && a.ripenessEnd && b.ripenessStart && b.ripenessEnd) {
+    weight += 1;
+    const am=(a.ripenessStart+a.ripenessEnd)/2, bm=(b.ripenessStart+b.ripenessEnd)/2;
+    score += Math.max(0,1-Math.abs(am-bm)/3);
+  }
+  return weight ? score/weight : -1;
+}
+
+function renderKnownConfusions(ref=currentReference()) {
+  const box=$('knownConfusions'); if (!box) return;
+  if (!ref) { box.classList.add('hidden'); box.innerHTML=''; return; }
+  const candidates=REFERENCE_VARIETIES.filter(x=>x.id!==ref.id && x.fruitType===ref.fruitType)
+    .map(x=>({meta:x, similarity:knownVarietySimilarity(ref,x), diffs:distinguishingTraits(ref,x,{})}))
+    .filter(x=>x.similarity>=0 && x.diffs.length)
+    .sort((a,b)=>b.similarity-a.similarity || b.diffs.length-a.diffs.length).slice(0,3);
+  if (!candidates.length) {
+    box.classList.remove('hidden');
+    box.innerHTML=`<h3>🔀 Verwechslersorten & Unterschiede</h3><p class="hint">Für ${escapeHtml(ref.name)} sind im aktuellen Datenbestand noch nicht genug strukturierte Vergleichsmerkmale vorhanden. Sobald weitere Sortenmerkmale ergänzt werden, erscheinen sie hier automatisch.</p>`;
+    return;
+  }
+  const blocks=candidates.map(({meta,diffs})=>{
+    const rows=diffs.slice(0,6).map(d=>`<div class="difference-row"><strong>${escapeHtml(d.label)}</strong><span>${escapeHtml(ref.name)}: ${escapeHtml(d.av.map(v=>traitLabel(d.key,v)).join(', '))}</span><span>${escapeHtml(meta.name)}: ${escapeHtml(d.bv.map(v=>traitLabel(d.key,v)).join(', '))}</span></div>`).join('');
+    return `<div class="confusion-pair"><h4>${escapeHtml(ref.name)} ↔ ${escapeHtml(meta.name)}</h4>${rows}</div>`;
+  }).join('');
+  box.classList.remove('hidden');
+  box.innerHTML=`<h3>🔀 Mögliche Verwechslersorten & Unterschiede</h3><p class="hint">Automatisch aus ähnlichen, bereits hinterlegten Merkmalen ermittelt. Das ist eine Prüfliste und keine sichere pomologische Aussage.</p>${blocks}<div class="next-check"><strong>Für die Nachprüfung:</strong> Form, Schalenfarbe/Berostung, Stiel- und Kelchgrube sowie Kerngehäuse/Kerne möglichst an mehreren typischen Früchten vergleichen.</div>`;
 }
 
 function applyReferenceToForm(ref=currentReference(), force=false, quiet=false) {
