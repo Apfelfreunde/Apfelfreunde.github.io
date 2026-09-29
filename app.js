@@ -644,7 +644,9 @@ function renderKnownConfusions(ref=currentReference()) {
 }
 
 function renderKnownConfusionsHtml(ref) {
-  if (!ref || !ref.builtInKnowledge) return '';
+  // V20: findReference() liefert den Fachdatensatz selbst; dieser hat nicht zwingend
+  // das Laufzeit-Flag builtInKnowledge. Deshalb nur auf einen vorhandenen Datensatz prüfen.
+  if (!ref) return '';
   const candidates=REFERENCE_VARIETIES.filter(x=>x.id!==ref.id && x.fruitType===ref.fruitType)
     .map(x=>({meta:x, similarity:knownVarietySimilarity(ref,x), diffs:distinguishingTraits(ref,x,{})}))
     .filter(x=>x.similarity>=0 && x.diffs.length)

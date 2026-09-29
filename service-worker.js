@@ -1,4 +1,4 @@
-const CACHE = 'apfelbuch-shell-v19-20260929-1';
+const CACHE = 'apfelbuch-shell-v20-20260929-1';
 const ASSETS = ['./', './index.html', './styles.css', './sortenwissen.js', './app.js', './manifest.webmanifest', './icon-192.png', './icon-512.png'];
 self.addEventListener('install', event => { event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(ASSETS))); self.skipWaiting(); });
 self.addEventListener('activate', event => { event.waitUntil((async () => { const keys = await caches.keys(); await Promise.all(keys.filter(key => key.startsWith('apfelbuch-shell-') && key !== CACHE).map(key => caches.delete(key))); await self.clients.claim(); })()); });
